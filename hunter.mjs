@@ -133,4 +133,4 @@ async function autoDiscoverAndScrape(searchQuery, maxVideos) {
 
 // 🎯 START THE ENGINE ON AUTOPILOT!
 // Format: autoDiscoverAndScrape("Search Query", NumberOfVideos)
-autoDiscoverAndScrape("Pune hidden motorcycle rides", 10);
+autoDiscoverAndScrape("Lonavala secret waterfalls motorcycle", 10);

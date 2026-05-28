@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailInput = document.getElementById('login-email');
     const passInput = document.getElementById('login-pass');
     const googleBtn = document.getElementById('google-login-btn');
+    const guestBtn = document.getElementById('guest-btn'); // 1. Select the new button
 
     if (localStorage.getItem('marga_logged_in') === 'true') {
         document.body.classList.add('logged-in');
@@ -38,6 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if(googleBtn) {
         googleBtn.addEventListener('click', () => {
             localStorage.setItem('marga_logged_in', 'true');
+            document.body.classList.add('logged-in');
+        });
+    }
+
+    // 2. Add the Guest Mode logic
+    if(guestBtn) {
+        guestBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            // We intentionally DO NOT set localStorage here. 
+            // This grants temporary access for this session only.
             document.body.classList.add('logged-in');
         });
     }
@@ -368,13 +379,17 @@ function showLocationCard(gem) {
     const initialHeartColor = isFav ? '#ff0055' : '#888';
     const initialGlow = isFav ? 'drop-shadow(0px 0px 6px rgba(255, 0, 85, 0.8))' : 'none';
 
+    // UPDATED: Added the close button right next to the favorite button here
     card.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; width: 100%;">
             <div style="flex: 1; padding-right: 16px;">
                 <div style="color: #00f0ff; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px;">${gem.vibeType || 'Adventure'}</div>
                 <h2 style="font-size: 24px; margin: 0; line-height: 1.2; font-weight: 700; color: #ffffff;">${gem.locationName}</h2>
             </div>
-            <button id="fav-btn" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1); color: ${initialHeartColor}; filter: ${initialGlow}; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; flex-shrink: 0; transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; justify-content: center; align-items: center; font-size: 18px;">♥</button>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <button id="fav-btn" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1); color: ${initialHeartColor}; filter: ${initialGlow}; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; flex-shrink: 0; transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; justify-content: center; align-items: center; font-size: 18px;">♥</button>
+                <button id="close-card-btn" style="background: none; border: none; color: #888; font-size: 24px; cursor: pointer; padding: 0; margin-top: -4px; transition: color 0.2s;">✕</button>
+            </div>
         </div>
         
         ${distDurHTML}
@@ -390,6 +405,14 @@ function showLocationCard(gem) {
     `;
     card.style.display = 'flex';
     
+    // NEW: Close Button Logic
+    const closeCardBtn = document.getElementById('close-card-btn');
+    if (closeCardBtn) {
+        closeCardBtn.addEventListener('click', () => {
+            card.style.display = 'none';
+        });
+    }
+
     const favBtn = document.getElementById('fav-btn');
     favBtn.addEventListener('click', function() {
         if (favoritedLocations.has(gem.locationName)) {
