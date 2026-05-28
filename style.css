@@ -1,0 +1,351 @@
+/* Marga Premium Apple-Inspired Dark-Mode Layout */
+
+/* 1. Global Reset & Defaults */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+html, body, #map { width: 100%; height: 100vh; margin: 0; padding: 0; overflow: hidden; }
+html, body { color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+::-webkit-scrollbar { display: none; }
+
+/* 2. Cinematic Map Container */
+#map { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; display: block !important; }
+#map::after {
+    content: ''; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 2;
+    background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.2) 30%, rgba(0, 0, 0, 0.75) 100%),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0) 75%, rgba(0, 0, 0, 0.7) 100%);
+    opacity: 1; transition: all 0.5s ease-in-out;
+}
+
+/* 3. Hero Overlay & Premium Typography */
+.hero-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100vh; z-index: 10;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: background-color 0.5s ease-in-out, backdrop-filter 0.5s ease-in-out, -webkit-backdrop-filter 0.5s ease-in-out;
+}
+body.map-active .hero-overlay { opacity: 0 !important; pointer-events: none !important; visibility: hidden; }
+
+.leaflet-control-container, .leaflet-routing-container, .leaflet-routing-alternatives-container {
+    display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;
+}
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    background: rgba(20, 20, 25, 0.85) !important; backdrop-filter: blur(20px) !important; color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important; border-radius: 12px !important;
+}
+.leaflet-popup-content { font-family: inherit !important; font-size: 0.88rem !important; line-height: 1.4; padding: 4px 6px !important; }
+.leaflet-popup-content b { color: #00f0ff; }
+.leaflet-container a.leaflet-popup-close-button { color: rgba(255, 255, 255, 0.4) !important; padding: 6px 6px 0 0 !important; }
+
+.hero-brand { 
+    text-align: center; width: 100%; opacity: 1; transition: all 0.5s ease-in-out; 
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; margin-bottom: 120px; 
+}
+
+.hero-title {
+    font-size: 4rem; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; color: #ffffff;
+    background: linear-gradient(180deg, #ffffff 30%, #888890 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; 
+    margin: 0; line-height: 1; 
+}
+
+.hero-subtitle {
+    font-size: 1rem; font-weight: 500; color: #ffffff !important; letter-spacing: 0.3em; text-transform: uppercase;
+    margin: 0; -webkit-text-fill-color: initial !important; text-shadow: 0px 2px 4px rgba(0,0,0,0.5); z-index: 20; position: relative;
+}
+
+/* 4. Search Bar Container & Animation */
+.search-container {
+    position: absolute !important; top: 55% !important; left: 50% !important; transform: translate(-50%, -50%) !important;
+    width: 90% !important; max-width: 600px !important; z-index: 4000 !important; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.search-pill {
+    position: relative; background: rgba(20, 20, 20, 0.45); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); border-radius: 30px; padding: 6px; display: flex; align-items: center;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+.search-pill:focus-within { border-color: rgba(255, 255, 255, 0.18); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 0 4px rgba(255, 255, 255, 0.02); background: rgba(25, 25, 25, 0.6); }
+.search-pill input { flex: 1; border: none; outline: none; background: transparent; font-family: inherit; font-size: 1.05rem; font-weight: 400; color: #ffffff; padding: 8px 60px 8px 24px; }
+.search-pill input::placeholder { color: rgba(255, 255, 255, 0.3); }
+.search-pill button {
+    position: absolute; right: 8px; background-color: rgba(255, 255, 255, 0.08); border: none; border-radius: 50%;
+    width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; color: #ffffff; cursor: pointer; transition: all 0.25s ease;
+}
+.search-pill button:hover { background-color: #ffffff; color: #000000; transform: scale(1.04); }
+
+/* Active state: Search bar glides up to the TOP CENTER */
+body.map-active .search-container {
+    top: 40px !important; left: 50% !important; transform: translateX(-50%) !important;
+    max-width: 500px !important; width: calc(100% - 140px) !important;
+}
+
+/* 5. Menu Drawer & Hamburger Button */
+#sidebar {
+    position: fixed; top: 0; left: -320px; width: 280px; height: 100vh; z-index: 5000 !important;
+    background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(30px); border-right: 1px solid rgba(255, 255, 255, 0.08);
+    transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1); padding: 40px 20px; box-shadow: 20px 0 50px rgba(0,0,0,0.5); overflow-y: auto;
+}
+body.menu-open #sidebar { left: 0; }
+
+#menu-btn {
+    position: absolute; top: 40px; left: 20px; z-index: 4000 !important;
+    background: rgba(30, 30, 35, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px;
+    width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); color: #ffffff; font-size: 26px; cursor: pointer; transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#menu-btn:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.05); }
+body.menu-open #menu-btn { opacity: 0 !important; pointer-events: none !important; transform: scale(0.8) !important; }
+
+/* 6. Dynamic Location Card (Master Layout Lock) */
+#location-card {
+    display: none; flex-direction: column !important; position: absolute !important;
+    bottom: 30px !important; left: 20px !important; width: calc(100% - 40px) !important; max-width: 420px !important; z-index: 2000 !important;
+    background: rgba(20, 20, 25, 0.85) !important; backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 20px !important; padding: 24px !important;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5) !important; transition: left 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.4s ease, opacity 0.4s ease !important;
+}
+body.menu-open #location-card { left: 320px !important; }
+
+#location-card .photo-carousel {
+    display: flex !important; flex-direction: row !important; gap: 10px !important; overflow-x: auto !important;
+    margin: 18px 0 !important; padding-bottom: 8px !important; scrollbar-width: none !important;
+}
+#location-card .photo-carousel::-webkit-scrollbar { display: none !important; }
+#location-card .photo-carousel img {
+    width: 130px !important; height: 85px !important; object-fit: cover !important; border-radius: 8px !important;
+    flex-shrink: 0 !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+#fav-btn.favorited { color: #ff3366 !important; background: rgba(255, 51, 102, 0.1) !important; border-color: rgba(255, 51, 102, 0.3) !important; transform: scale(1.05); }
+
+/* 7. Inputs & Checkboxes */
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; background: transparent; outline: none; margin: 6px 0; }
+input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 2px; cursor: pointer; background: rgba(255, 255, 255, 0.15); border-radius: 1px; border: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; height: 14px; width: 14px; border-radius: 50%; background: #ffffff; border: none; cursor: pointer; margin-top: -6px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1); }
+input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.2); }
+input[type="range"].disabled { opacity: 0.2; pointer-events: none; }
+
+/* 8. Map Pins */
+.simple-dot-marker { 
+    background: rgba(0, 240, 255, 0.25) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; 
+    border-radius: 50% !important; box-shadow: 0 0 4px rgba(0, 240, 255, 0.2) !important; 
+    backdrop-filter: blur(2px) !important; transition: all 0.25s ease !important; 
+}
+.simple-dot-marker:hover { 
+    background: #00f0ff !important; border: 2px solid #ffffff !important; 
+    box-shadow: 0 0 16px rgba(0, 240, 255, 1), 0 0 30px rgba(0, 240, 255, 0.6) !important; cursor: pointer !important; 
+}
+path.leaflet-interactive { stroke: #00f0ff !important; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0px 0px 8px rgba(0, 240, 255, 0.6)); }
+
+/* 9. User GPS Location Marker */
+.user-location-marker {
+    background: #ffffff !important; border: 3px solid #00f0ff !important; border-radius: 50% !important;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.8) !important; position: relative;
+}
+.user-location-marker::after {
+    content: ''; position: absolute; top: -12px; left: -12px; right: -12px; bottom: -12px;
+    border: 2px solid #00f0ff; border-radius: 50%; animation: gps-pulse 2s infinite ease-out;
+}
+@keyframes gps-pulse { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+
+/* --- SIDEBAR UI PRESETS --- */
+.toggle-switch { position: relative; display: inline-block; width: 36px; height: 20px; margin-right: 12px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.15); transition: .3s cubic-bezier(0.25, 0.8, 0.25, 1); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); }
+.toggle-slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: #888; transition: .3s cubic-bezier(0.25, 0.8, 0.25, 1); border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.toggle-switch input:checked + .toggle-slider { background-color: rgba(0, 240, 255, 0.2); border-color: rgba(0, 240, 255, 0.4); }
+.toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); background-color: #00f0ff; }
+
+.checkbox-container { display: flex; align-items: center; position: relative; padding-left: 32px; cursor: pointer; font-size: 14px; user-select: none; color: rgba(255, 255, 255, 0.8); transition: color 0.2s ease; }
+.checkbox-container:hover { color: #ffffff; }
+.checkbox-container input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+.checkmark { position: absolute; top: 50%; left: 0; transform: translateY(-50%); height: 18px; width: 18px; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; transition: all 0.2s; }
+.checkbox-container:hover input ~ .checkmark { background-color: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.25); }
+.checkbox-container input:checked ~ .checkmark { background-color: #00f0ff; border-color: #00f0ff; }
+.checkmark:after { content: ""; position: absolute; display: none; left: 5px; top: 1px; width: 4px; height: 9px; border: solid #000; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.checkbox-container input:checked ~ .checkmark:after { display: block; }
+
+.history-item { color: rgba(255, 255, 255, 0.65); text-decoration: none; font-size: 14px; padding: 4px 0; display: block; transition: color 0.2s ease; }
+.history-item:hover { color: #00f0ff; }
+
+
+/* ========================================================= */
+/* --- THE FIX: HIDE MAIN UI UNTIL LOGGED IN --- */
+/* ========================================================= */
+body:not(.logged-in) .hero-overlay,
+body:not(.logged-in) .search-container,
+body:not(.logged-in) #menu-btn {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Ensure smooth fade-in once logged in */
+.hero-overlay, .search-container, #menu-btn {
+    transition: opacity 0.6s ease, visibility 0.6s ease, transform 0.6s ease;
+}
+
+
+/* ========================================================= */
+/* --- APPLE GLASSMORPHISM LOGIN WIDGET --- */
+/* ========================================================= */
+#login-card {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 340px;
+    background: rgba(30, 30, 35, 0.5); /* Very sheer dark tint */
+    backdrop-filter: blur(24px) saturate(200%); /* Signature Apple Glass blur */
+    -webkit-backdrop-filter: blur(24px) saturate(200%); /* For Safari */
+    border: 1px solid rgba(255, 255, 255, 0.15); /* Thin crisp grey outline */
+    border-radius: 24px; /* Smooth iOS-style rounded corners */
+    padding: 32px 24px;
+    z-index: 6000;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    text-align: center;
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Hide when user clicks Continue */
+body.logged-in #login-card {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -55%) scale(0.95);
+}
+
+.widget-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 4px 0;
+    letter-spacing: 0.5px;
+}
+
+.widget-subtitle {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 24px;
+    font-weight: 500;
+}
+
+.widget-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.2); 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: #ffffff;
+    margin-bottom: 12px;
+    outline: none;
+    font-size: 14px;
+    transition: border 0.3s ease, background 0.3s ease;
+}
+
+.widget-input:focus {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.widget-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.widget-btn {
+    width: 100%;
+    background: #ffffff; 
+    color: #000000; 
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.widget-btn:hover {
+    opacity: 0.9;
+    transform: scale(0.98);
+}
+
+.forgot-pass-container {
+    text-align: right;
+    margin-bottom: 16px;
+    margin-top: -4px;
+}
+
+.forgot-pass-link {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.forgot-pass-link:hover {
+    color: #ffffff;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.divider span {
+    padding: 0 10px;
+}
+
+.google-btn {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05); 
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.google-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(0.98);
+}
+
+.widget-footer {
+    margin-top: 20px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.widget-footer a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* --- HIDE GPS MARKER ON TITLE SCREEN --- */
+body:not(.map-active) .user-location-marker {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
