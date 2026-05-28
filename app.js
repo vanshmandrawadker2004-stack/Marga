@@ -78,6 +78,24 @@ if (closeBtn) closeBtn.addEventListener('click', () => { document.body.classList
 const searchBtn = document.getElementById('search-btn');
 if (searchBtn) searchBtn.addEventListener('click', () => { executeSearch(); });
 
+// === NEW: CLICK-OUTSIDE UX ===
+// 1. Listen for clicks on the whole document
+document.addEventListener('click', (e) => {
+    const sidebar = document.getElementById('sidebar');
+    // If the menu is open, AND the click was NOT inside the sidebar, close it
+    if (document.body.classList.contains('menu-open') && sidebar && !sidebar.contains(e.target)) {
+        document.body.classList.remove('menu-open');
+    }
+});
+
+// 2. Also close the menu if the user interacts directly with the map
+map.on('click', () => {
+    document.body.classList.remove('menu-open');
+});
+map.on('dragstart', () => {
+    document.body.classList.remove('menu-open');
+});
+
 
 // --- UPGRADED NLP PARSER ENGINE ---
 function parseConversationalQuery(rawQuery) {
