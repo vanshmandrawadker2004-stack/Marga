@@ -48,6 +48,14 @@ body.map-active .hero-overlay { opacity: 0 !important; pointer-events: none !imp
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; 
     margin: 0; line-height: 1; 
 }
+.hero-social-proof {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6); /* Muted off-white/grey */
+    margin-top: 8px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase; /* Gives it a clean, modern tracker aesthetic */
+}
 
 .hero-subtitle {
     font-size: 1rem; font-weight: 500; color: #ffffff !important; letter-spacing: 0.3em; text-transform: uppercase;
@@ -348,4 +356,23 @@ body:not(.map-active) .user-location-marker {
     visibility: hidden !important;
     pointer-events: none !important;
     transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+/* Lifts the brightness of the map for better daylight visibility */
+.leaflet-layer {
+    filter: brightness(1.25) contrast(1.1) !important;
+}
+
+/* Brighten widget subtitles and footer text */
+.widget-subtitle, 
+.widget-footer, 
+.hero-social-proof, 
+.history-item {
+    color: rgba(255, 255, 255, 0.85) !important; 
+}
+
+/* Brighten the muted grey text in the sidebar */
+#sidebar h3, 
+#sidebar .utility-toggle + span,
+#close-drawer-btn {
+    color: #bbb !important; 
 }
