@@ -34,7 +34,7 @@ function calculateDistanceKm(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-// --- UPGRADED MAPBOX VERIFICATION ENGINE (With Anchor Leash) ---
+// --- UPGRADED MAPBOX VERIFICATION ENGINE (With Fallback Search) ---
 async function verifyCoordinates(gem) {
     try {
         const puneLat = 18.5204;
@@ -56,47 +56,61 @@ async function verifyCoordinates(gem) {
             }
         }
 
-        // --- STEP 2: Find the Specific Spot (Patched for Stutter & Borders) ---
-        let cleanName = gem.locationName;
-        if (gem.category !== 'Cafe/Restaurant' && !cleanName.toLowerCase().includes(gem.category.toLowerCase())) {
-            cleanName = `${cleanName} ${gem.category}`;
-        }
-        
-        const searchQuery = `${cleanName}, ${gem.anchorCity ? gem.anchorCity + ',' : ''} India`;
-        const query = encodeURIComponent(searchQuery);
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${MAPBOX_TOKEN}&limit=1&types=poi,place,locality,outdoors`;
-        
-        const response = await fetch(url);
-        const data = await response.json();
-        
+        // --- STEP 2: The Two-Stage Fallback Search ---
+        let resultLng = null;
+        let resultLat = null;
+
+        // Attempt 1: Strict Search (Name + Anchor City)
+        const query1 = encodeURIComponent(`${gem.locationName}, ${gem.anchorCity ? gem.anchorCity + ',' : ''} Maharashtra, India`);
+        const url1 = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query1}.json?access_token=${MAPBOX_TOKEN}&limit=1`;
+        let response = await fetch(url1);
+        let data = await response.json();
+
         if (data.features && data.features.length > 0) {
-            const resultLng = data.features[0].center[0];
-            const resultLat = data.features[0].center[1];
+            resultLng = data.features[0].center[0];
+            resultLat = data.features[0].center[1];
+        } else {
+            // Attempt 2: Broad Search (Drop the Anchor City, Mapbox often gets confused by regional boundaries)
+            const query2 = encodeURIComponent(`${gem.locationName}, Maharashtra, India`);
+            const url2 = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query2}.json?access_token=${MAPBOX_TOKEN}&limit=1`;
+            response = await fetch(url2);
+            data = await response.json();
+
+            if (data.features && data.features.length > 0) {
+                resultLng = data.features[0].center[0];
+                resultLat = data.features[0].center[1];
+            }
+        }
+
+        // If both searches fail, reject it.
+        if (!resultLng || !resultLat) {
+            // console.log(`    ❌ Mapbox completely blind to: ${gem.locationName}`);
+            return null;
+        }
             
-            // --- STEP 3: THE WATERFALL FILTERS ---
+        // --- STEP 3: THE WATERFALL FILTERS ---
+        
+        // Filter 1: The City-Center Kill Switch (15km limit)
+        const distanceToCityCenter = calculateDistanceKm(puneLat, puneLng, resultLat, resultLng);
+        const natureCategories = ['Ghat', 'Trail', 'Viewpoint', 'Off-Road', 'Lake'];
+        
+        if (natureCategories.includes(gem.category) && distanceToCityCenter < 15) {
+            console.log(`    🛑 BLOCKED: "${gem.locationName}" mapped inside Pune city limits. False positive.`);
+            return null;
+        }
+
+        // Filter 2: The Anchor Leash (Expanded to 200km for longer rides)
+        if (anchorCoords) {
+            const distToAnchor = calculateDistanceKm(anchorCoords.lat, anchorCoords.lng, resultLat, resultLng);
             
-            // Filter 1: The City-Center Kill Switch (15km limit)
-            const distanceToCityCenter = calculateDistanceKm(puneLat, puneLng, resultLat, resultLng);
-            const natureCategories = ['Ghat', 'Trail', 'Viewpoint', 'Off-Road', 'Lake'];
-            
-            if (natureCategories.includes(gem.category) && distanceToCityCenter < 15) {
-                console.log(`    🛑 BLOCKED: "${gem.locationName}" mapped inside Pune city limits. False positive.`);
+            if (distToAnchor > 200) {
+                console.log(`    🛑 BLOCKED: "${gem.locationName}" is ${distToAnchor.toFixed(1)}km away from anchor (${gem.anchorCity}). Hallucination.`);
                 return null;
             }
-
-            // Filter 2: The Anchor Leash (120km limit)
-            if (anchorCoords) {
-                const distToAnchor = calculateDistanceKm(anchorCoords.lat, anchorCoords.lng, resultLat, resultLng);
-                
-                if (distToAnchor > 120) {
-                    console.log(`    🛑 BLOCKED: "${gem.locationName}" is ${distToAnchor.toFixed(1)}km away from its anchor region (${gem.anchorCity}). Mapbox hallucination.`);
-                    return null;
-                }
-            }
-
-            return { lng: resultLng, lat: resultLat };
         }
-        return null;
+
+        return { lng: resultLng, lat: resultLat };
+
     } catch (error) {
         console.error(`    ⚠️ Mapbox API error for ${gem.locationName}`);
         return null;
@@ -114,15 +128,16 @@ async function huntForGems(videoUrl) {
 
         const prompt = `
         You are an expert geographical data extraction engine for "Marga". 
-        Extract every notable riding location, viewpoint, or road mentioned in this vlog transcript.
+        Extract ONLY specific mountain passes (Ghats), off-road dirt trails, hidden lakes, and highly technical riding roads mentioned in this vlog transcript.
 
         CRITICAL RULES:
-        1. Naming & Hygiene: Use the REAL, specific map name or proper noun (e.g., 'Tikona Fort', 'Pawna Lake'). NEVER include descriptive paths or conversational filler like 'Route to...', 'Path leading to...', 'Off-road section to...'. 
-        2. "anchorCity" MUST be the nearest localized town or sub-region hub (e.g., "Lonavala", "Kamshet", "Mulshi"). If it is a generic ride around Pune's outskirts, use "Pune".
-        3. "category" MUST be exactly one of: "Ghat", "Trail", "Viewpoint", "Off-Road", "Cafe/Restaurant", or "Lake".
-        4. Keep "description" under 40 words, packed with sensory terrain keywords.
-        5. "distanceKm" and "rideTimeMinutes" MUST be null.
-        6. "breakfastStop" and "cafe" MUST be a real mentioned name, or null.
+        1. THE KILL SWITCH: Completely IGNORE national highways, petrol pumps, cities, generic restaurants, dhabas, and major tourist traps. If it is not a distinct riding route or hidden nature spot, DO NOT extract it.
+        2. Naming & Hygiene: Use the REAL, specific map name or proper noun (e.g., 'Tikona Fort', 'Pawna Lake'). NEVER include descriptive paths or conversational filler like 'Route to...'. 
+        3. "anchorCity" MUST be the nearest localized town or sub-region hub (e.g., "Lonavala", "Kamshet", "Mulshi"). If it is a generic ride around Pune's outskirts, use "Pune".
+        4. "category" MUST be exactly one of: "Ghat", "Trail", "Viewpoint", "Off-Road", or "Lake". (Do NOT use "Cafe/Restaurant").
+        5. Keep "description" under 40 words, packed with sensory terrain keywords.
+        6. "distanceKm" and "rideTimeMinutes" MUST be null.
+        7. "breakfastStop" and "cafe" MUST be a real mentioned name, or null.
 
         OUTPUT FORMAT (JSON Array ONLY):
         [
