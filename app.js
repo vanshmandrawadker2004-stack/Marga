@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginCard = document.getElementById('login-card');
     const qWrap = document.getElementById('questionnaire-wrap');
     const saveProfileBtn = document.getElementById('save-profile-btn');
+    const heroOverlay = document.querySelector('.hero-overlay');
 
     document.querySelectorAll('.mcq-option').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -58,37 +59,52 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function routeUser(user) {
-        const userSnap = await getDoc(doc(db, "users", user.uid));
-        if (userSnap.exists()) {
-            const data = userSnap.data();
-            if (data.bikeModel === "Unknown" || !data.bikeModel) {
-                loginCard.style.display = 'none'; qWrap.style.display = 'flex';
-            } else {
-                currentRiderProfile = data;
-                
-                // Cloud Favorites Sync
-                favoritedLocations.clear();
-                if (data.savedTrails && data.savedTrails.length > 0) {
-                    data.savedTrails.forEach(trail => favoritedLocations.add(trail));
-                }
-                updateSavedTrailsSidebar(); 
-                
-                // Update Top Toolbar Profile Text
-                document.getElementById('profile-name').innerText = user.displayName || user.email.split('@')[0];
-                document.getElementById('profile-avatar').innerText = (user.displayName || user.email)[0].toUpperCase();
-                document.getElementById('profile-tag').innerText = `${data.bikeModel} | ${data.skillLevel}`;
-                
-                loginCard.style.display = 'none'; qWrap.style.display = 'none';
-                document.body.classList.add('logged-in'); 
-                executeSearch();
+        let userSnap = await getDoc(doc(db, "users", user.uid));
+        
+        // 🐛 BUG FIX: Race Condition Check. If Firebase Auth fired before Firestore saved the doc, force the save here.
+        if (!userSnap.exists()) {
+            await setDoc(doc(db, "users", user.uid), { email: user.email, bikeModel: "Unknown", savedTrails: [], createdAt: new Date() });
+            userSnap = await getDoc(doc(db, "users", user.uid));
+        }
+
+        const data = userSnap.data();
+        if (data.bikeModel === "Unknown" || !data.bikeModel) {
+            // Show Questionnaire
+            loginCard.style.display = 'none'; 
+            qWrap.style.display = 'flex';
+            if (heroOverlay) heroOverlay.style.display = 'none';
+        } else {
+            // Load Map & User Data
+            currentRiderProfile = data;
+            
+            // Cloud Favorites Sync
+            favoritedLocations.clear();
+            if (data.savedTrails && data.savedTrails.length > 0) {
+                data.savedTrails.forEach(trail => favoritedLocations.add(trail));
             }
+            updateSavedTrailsSidebar(); 
+            
+            // Update Top Toolbar Profile Text
+            document.getElementById('profile-name').innerText = user.displayName || user.email.split('@')[0];
+            document.getElementById('profile-avatar').innerText = (user.displayName || user.email)[0].toUpperCase();
+            document.getElementById('profile-tag').innerText = `${data.bikeModel} | ${data.skillLevel}`;
+            
+            loginCard.style.display = 'none'; 
+            qWrap.style.display = 'none';
+            if (heroOverlay) heroOverlay.style.display = 'none';
+            
+            document.body.classList.add('logged-in'); 
+            executeSearch();
         }
     }
 
     onAuthStateChanged(auth, (user) => {
         if (user) routeUser(user);
         else {
-            loginCard.style.display = 'block'; qWrap.style.display = 'none';
+            loginCard.style.display = 'block'; 
+            qWrap.style.display = 'none';
+            if (heroOverlay) heroOverlay.style.display = 'flex';
+            
             document.body.classList.remove('logged-in');
             document.body.classList.remove('menu-open'); 
             
@@ -112,9 +128,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (saveProfileBtn) saveProfileBtn.addEventListener('click', async () => {
         const user = auth.currentUser;
-        const selectedBike = document.querySelector('#bike-group .mcq-option.selected')?.getAttribute('data-value');
-        const selectedSkill = document.querySelector('#skill-group .mcq-option.selected')?.getAttribute('data-value');
+        const selectedBike = document.querySelector('#bike-group .mcq-option.selected')?.getAttribute('data-value') || 'ADV';
+        const selectedSkill = document.querySelector('#skill-group .mcq-option.selected')?.getAttribute('data-value') || 'Beginner';
         const selectedVibes = Array.from(document.querySelectorAll('#vibe-group .mcq-option.selected')).map(el => el.getAttribute('data-value'));
+        
+        qWrap.style.display = 'none'; // Instantly hide the UI for speed
         
         await updateDoc(doc(db, "users", user.uid), { bikeModel: selectedBike, skillLevel: selectedSkill, idealVibes: selectedVibes });
         routeUser(user);
@@ -149,7 +167,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (guestBtn) {
         guestBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            loginCard.style.display = 'none'; qWrap.style.display = 'none';
+            loginCard.style.display = 'none'; 
+            qWrap.style.display = 'none';
+            if (heroOverlay) heroOverlay.style.display = 'none';
             
             document.getElementById('profile-name').innerText = "Guest Rider";
             document.getElementById('profile-avatar').innerText = "G";
@@ -238,7 +258,6 @@ function executeSearch() {
         if (cb.checked) activeUtilities.push(cb.getAttribute('data-query').toLowerCase());
     });
     
-    // --- THIS IS THE PART THAT WAS MISSING YOUR CLOSING LOGIC ---
     getDocs(collection(db, "trails")).then(snapshot => {
         const data = snapshot.docs.map(doc => doc.data());
 
@@ -274,10 +293,8 @@ function executeSearch() {
         matchedGems = matchedGems.map(gem => {
             let personalScore = 0;
             
-            // ⚠️ Changed to 'let' so we can inject words into it!
             let gemText = `${gem.vibeType || ''} ${gem.category || ''} ${gem.description || ''} ${gem.subCategory || ''}`.toLowerCase();
             
-            // --- SMART SYNONYM INJECTION (Only put it here, ONCE!) ---
             if (gem.category === 'Mountain' || gem.category === 'Scenic') gemText += " sunrise sunset view nature photography morning evening twilight ";
             if (gem.category === 'Coastal') gemText += " sunset sunrise beach ocean sea water evening coast ";
             if (gem.vibeType === 'Twisties') gemText += " corners leaning fast curves canyon aggressive ghat ";
@@ -384,8 +401,6 @@ function calculateRoute(destLat, destLng) {
         const realDistanceKm = (route.distance / 1000).toFixed(1);
         const rawMinutes = route.duration / 60;
         
-        // Removed the artificial time padding. 
-        // We now use the raw routing engine data for better Google Maps parity.
         let realisticMinutes = Math.round(rawMinutes);
 
         const hrs = Math.floor(realisticMinutes / 60);
@@ -398,12 +413,10 @@ function calculateRoute(destLat, destLng) {
         if (distUI) distUI.innerText = `${realDistanceKm} km`;
         if (durUI) durUI.innerText = timeStr;
 
-        // --- SYNC SOLAR WIDGET WITH REAL ROUTED TIME ---
         if (typeof SunCalc !== 'undefined') {
             const times = SunCalc.getTimes(new Date(), destLat, destLng);
             const formatTime = (date) => date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             
-            // realisticMinutes comes directly from the Mapbox API above!
             const leaveSunrise = new Date(times.sunrise.getTime() - (realisticMinutes * 60000));
             const leaveSunset = new Date(times.sunset.getTime() - (realisticMinutes * 60000));
 
@@ -419,7 +432,6 @@ function calculateRoute(destLat, destLng) {
 
 // --- PREMIUM TELEMETRY GENERATOR ---
 function generateTelemetrySVG(lat) {
-    // Generate a consistent topography profile based on the location's coordinates
     let seed = lat * 10000;
     const random = () => { let x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
     
@@ -457,12 +469,11 @@ function generateTelemetrySVG(lat) {
     `;
 }
 
-// --- LOCATION CARD UI (CRED-LEVEL TYPOGRAPHY) ---
+// --- LOCATION CARD UI ---
 function showLocationCard(gem) {
     const card = document.getElementById('location-card');
     if (!card) return;
     
-    // Curated Photo Feed (100% Free)
     let carouselHTML = '';
     if (gem.images && gem.images.length > 0) {
         const imageTags = gem.images.map(imgUrl => `<img src="${imgUrl}" style="width: 140px; height: 90px; object-fit: cover; border-radius: 8px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05);">`).join('');
@@ -481,7 +492,6 @@ function showLocationCard(gem) {
         tempTime = h > 0 ? `${h}h ${m}m` : `${m}m`;
     }
 
-    // EXTREME CONTRAST LABELS & VALUES
     let distDurHTML = `
         <div style="display: flex; margin-bottom: 28px; align-items: center;">
             <div style="flex: 1; padding-right: 16px;">
@@ -496,17 +506,13 @@ function showLocationCard(gem) {
         </div>
     `;
 
-    // --- LIVE SOLAR & DEPARTURE TELEMETRY ---
     let solarHTML = '';
     if (typeof SunCalc !== 'undefined') {
-        // Calculate raw distance to get an estimated travel time before the async router finishes
         const rawDistKm = map.distance([userLat, userLng], [gem.latitude, gem.longitude]) / 1000;
         const rideMins = gem.rideTimeMinutes || (rawDistKm * 1.5);
         
-        // Get today's solar data for the destination coordinates
         const times = SunCalc.getTimes(new Date(), gem.latitude, gem.longitude);
         
-        // Subtract ride time to figure out exactly when to start the engine
         const leaveSunrise = new Date(times.sunrise.getTime() - (rideMins * 60000));
         const leaveSunset = new Date(times.sunset.getTime() - (rideMins * 60000));
         
@@ -565,7 +571,7 @@ function showLocationCard(gem) {
         ${carouselHTML}
         ${generateTelemetrySVG(gem.latitude)}
         
-        ${solarHTML} <!-- YOUR NEW SOLAR WIDGET IS INJECTED HERE -->
+        ${solarHTML} 
         
         <div style="margin-bottom: 28px;">
             <div style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; font-weight: 800;">Intel</div>
@@ -580,33 +586,32 @@ function showLocationCard(gem) {
 }
 
 // --- GUEST MODE ROUTING INTERCEPTOR ---
-    const startRouteBtn = document.getElementById('start-route-btn');
-    if (startRouteBtn) {
-        startRouteBtn.addEventListener('click', (e) => {
-            if (!auth.currentUser) {
-                e.preventDefault(); 
-                card.style.display = 'none'; // Hide the map card
+const startRouteBtn = document.getElementById('start-route-btn');
+if (startRouteBtn) {
+    startRouteBtn.addEventListener('click', (e) => {
+        if (!auth.currentUser) {
+            e.preventDefault(); 
+            const card = document.getElementById('location-card');
+            if(card) card.style.display = 'none'; 
+            
+            const loginCard = document.getElementById('login-card');
+            if (loginCard) {
+                loginCard.style.display = 'block'; 
                 
-                const loginCard = document.getElementById('login-card');
-                if (loginCard) {
-                    loginCard.style.display = 'block'; 
+                let lockMsg = document.getElementById('guest-lock-msg');
+                if (!lockMsg) {
+                    lockMsg = document.createElement('div');
+                    lockMsg.id = 'guest-lock-msg';
+                    lockMsg.style.cssText = "background: rgba(0, 240, 255, 0.05); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 12px; margin-bottom: 24px; font-size: 11px; font-weight: 800; text-align: center; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(0,240,255,0.1);";
                     
-                    // Inject a sleek UI banner instead of a clunky alert
-                    let lockMsg = document.getElementById('guest-lock-msg');
-                    if (!lockMsg) {
-                        lockMsg = document.createElement('div');
-                        lockMsg.id = 'guest-lock-msg';
-                        lockMsg.style.cssText = "background: rgba(0, 240, 255, 0.05); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 12px; margin-bottom: 24px; font-size: 11px; font-weight: 800; text-align: center; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(0,240,255,0.1);";
-                        
-                        // Insert it at the top of the login card
-                        loginCard.insertBefore(lockMsg, loginCard.firstChild);
-                    }
-                    lockMsg.innerText = "Sign in to unlock live routing & telemetry";
+                    loginCard.insertBefore(lockMsg, loginCard.firstChild);
                 }
-                document.body.classList.remove('logged-in');
+                lockMsg.innerText = "Sign in to unlock live routing & telemetry";
             }
-        });
-    }
+            document.body.classList.remove('logged-in');
+        }
+    });
+}
 
 function updateSavedTrailsSidebar() {
     const savedContainer = document.getElementById('saved-trails-list');
@@ -682,20 +687,18 @@ document.querySelectorAll('.utility-toggle').forEach(toggle => {
 const searchBarInput = document.getElementById('search-bar');
 if (searchBarInput) searchBarInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') { e.preventDefault(); executeSearch(); } });
 
-// --- THE MISSING RADAR WIRE ---
+// --- THE RADAR WIRE ---
 const radarToggle = document.getElementById('toggle-radar');
 if (radarToggle) radarToggle.addEventListener('change', () => executeSearch());
 
 // --- GLOBAL LOADER REMOVAL (WITH FAILSAFE) ---
 window.addEventListener('load', () => {
-    // Attempt to hide it smoothly when everything is loaded
     setTimeout(() => {
         const loader = document.getElementById('global-loader');
         if (loader) loader.classList.add('hidden');
     }, 800);
 });
 
-// Absolute failsafe: If the map or Firebase stalls, kill the loader after 3 seconds anyway
 setTimeout(() => {
     const loader = document.getElementById('global-loader');
     if (loader && !loader.classList.contains('hidden')) {
@@ -706,11 +709,10 @@ setTimeout(() => {
 
 // --- DATABASE SEEDING UTILITY ---
 async function batchUploadTrails() {
-    console.log("Starting batch upload of 50 premium trails...");
+    console.log("Starting batch upload of premium trails...");
     let count = 0;
     for (const gem of newHiddenGems) {
         try {
-            // Generates a unique ID based on the location name (removes spaces)
             const docId = gem.locationName.replace(/\s+/g, '-').toLowerCase(); 
             await setDoc(doc(db, "trails", docId), gem);
             count++;
@@ -721,4 +723,3 @@ async function batchUploadTrails() {
     }
     console.log(`SUCCESS! Uploaded ${count} new trails to Firebase.`);
 }
-
