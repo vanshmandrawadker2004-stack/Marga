@@ -566,42 +566,37 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
 /* --- MOBILE RESPONSIVENESS BREAKPOINT (Phones) --- */
 @media screen and (max-width: 768px) {
     
-    /* 1. TOP NAV ZONE (Locked to the top) */
+/* 1. TOP NAV ZONE (Locked to top, horizontally scrollable if tight) */
     #top-toolbar {
+        position: fixed !important;
         top: 12px !important;
         left: 12px !important;
         right: 12px !important;
-        flex-direction: row;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 0;
-        z-index: 2000 !important;
+        width: calc(100% - 24px) !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important; /* Lets users swipe the toolbar if it overflows */
+        justify-content: flex-start !important;
+        gap: 8px !important;
+        padding: 0 !important;
+        z-index: 2500 !important;
     }
 
-    #top-toolbar .icon-btn span, 
-    #top-toolbar .toolbar-pill span {
-        display: none !important; /* Hide text, show only icons */
-    }
-
-    .toolbar-pill {
-        padding: 8px 12px;
-        gap: 8px;
-    }
-
-    /* 2. SEARCH BAR ZONE (Locked neatly under the toolbar) */
-    .search-container {
-        top: 72px !important; /* Push below toolbar */
-        bottom: auto !important; /* Force it OFF the bottom of the screen */
+    /* 2. SEARCH BAR ZONE (Forced under toolbar via ID) */
+    #search-container {
+        position: fixed !important;
+        top: 76px !important;       /* Locks it exactly below the toolbar */
+        bottom: auto !important;    /* Kills the desktop bottom positioning */
         left: 12px !important;
         right: 12px !important;
+        width: calc(100% - 24px) !important;
         transform: none !important;
-        width: auto !important;
-        z-index: 1900 !important;
+        z-index: 2400 !important;
     }
-
+    
     .search-pill {
-        width: 100%;
-        box-sizing: border-box;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     /* 3. BOTTOM SHEET ZONE (The Location Card) */
