@@ -566,7 +566,7 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
 /* --- MOBILE RESPONSIVENESS BREAKPOINT (Phones) --- */
 @media screen and (max-width: 768px) {
     
-/* 1. TOP NAV ZONE (Bulletproof Single Line) */
+/* 1. TOP NAV ZONE (Ultra-Compact & Radar Safe) */
     #top-toolbar {
         position: fixed !important;
         top: 12px !important;
@@ -576,44 +576,45 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
         flex-wrap: nowrap !important;
         justify-content: space-between !important;
         align-items: center !important;
-        gap: 4px !important; 
+        gap: 2px !important; /* Micro-gap to save space */
         padding: 0 !important;
         z-index: 2500 !important;
         overflow-x: visible !important;
     }
 
-    /* Target the buttons themselves to physically shrink them */
+    /* Shrink the button containers even more */
     .toolbar-pill, .icon-btn {
-        padding: 6px 8px !important; 
-        height: 38px !important; /* Force a strict height */
+        padding: 4px 6px !important; /* Shaved off 2px of padding */
+        height: 36px !important; /* Slightly shorter */
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         gap: 4px !important;
-        transform: none !important; /* Remove the old scale trick */
-        font-size: 11px !important; /* Shrink any text that refuses to hide */
-        white-space: nowrap !important; /* Prevent text from stacking */
+        transform: none !important;
+        font-size: 11px !important;
+        white-space: nowrap !important;
     }
 
-    /* Nuke any text elements to save maximum space */
-    .toolbar-pill span, 
+    /* CRITICAL FIX: Hide text spans, but SPARE the toggle-slider span! */
+    .toolbar-pill span:not(.toggle-slider), 
     .toolbar-pill p, 
-    .icon-btn span {
+    .icon-btn span:not(.toggle-slider) {
         display: none !important; 
     }
 
-    /* Shrink the SVGs/Icons slightly so they fit the new smaller buttons */
+    /* Shrink the SVGs/Icons down a notch */
     .toolbar-pill svg, .icon-btn svg {
-        width: 16px !important;
-        height: 16px !important;
+        width: 14px !important;
+        height: 14px !important;
     }
 
-    /* Keep the profile circle tight */
+    /* Keep the profile circle tight but scaled appropriately */
     #profile-avatar {
-        width: 32px !important;
-        height: 32px !important;
-        font-size: 14px !important;
-        flex-shrink: 0 !important; /* Prevent it from getting squished */
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 12px !important;
+        flex-shrink: 0 !important; /* Prevent iOS from squashing it */
+        margin-left: 2px !important;
     }
 
     /* 2. SEARCH BAR ZONE (Anchored to the bottom) */
