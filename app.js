@@ -61,7 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
     async function routeUser(user) {
         let userSnap = await getDoc(doc(db, "users", user.uid));
         
-        // 🐛 BUG FIX: Race Condition Check. If Firebase Auth fired before Firestore saved the doc, force the save here.
         if (!userSnap.exists()) {
             await setDoc(doc(db, "users", user.uid), { email: user.email, bikeModel: "Unknown", savedTrails: [], createdAt: new Date() });
             userSnap = await getDoc(doc(db, "users", user.uid));
@@ -69,22 +68,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const data = userSnap.data();
         if (data.bikeModel === "Unknown" || !data.bikeModel) {
-            // Show Questionnaire
             loginCard.style.display = 'none'; 
             qWrap.style.display = 'flex';
             if (heroOverlay) heroOverlay.style.display = 'none';
         } else {
-            // Load Map & User Data
             currentRiderProfile = data;
             
-            // Cloud Favorites Sync
             favoritedLocations.clear();
             if (data.savedTrails && data.savedTrails.length > 0) {
                 data.savedTrails.forEach(trail => favoritedLocations.add(trail));
             }
             updateSavedTrailsSidebar(); 
             
-            // Update Top Toolbar Profile Text
             document.getElementById('profile-name').innerText = user.displayName || user.email.split('@')[0];
             document.getElementById('profile-avatar').innerText = (user.displayName || user.email)[0].toUpperCase();
             document.getElementById('profile-tag').innerText = `${data.bikeModel} | ${data.skillLevel}`;
@@ -107,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             document.body.classList.remove('logged-in');
             document.body.classList.remove('menu-open'); 
+            document.body.classList.remove('card-open'); 
             
             const locCard = document.getElementById('location-card');
             if (locCard) locCard.style.display = 'none';
@@ -132,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedSkill = document.querySelector('#skill-group .mcq-option.selected')?.getAttribute('data-value') || 'Beginner';
         const selectedVibes = Array.from(document.querySelectorAll('#vibe-group .mcq-option.selected')).map(el => el.getAttribute('data-value'));
         
-        qWrap.style.display = 'none'; // Instantly hide the UI for speed
+        qWrap.style.display = 'none'; 
         
         await updateDoc(doc(db, "users", user.uid), { bikeModel: selectedBike, skillLevel: selectedSkill, idealVibes: selectedVibes });
         routeUser(user);
@@ -228,6 +224,7 @@ function parseConversationalQuery(rawQuery) {
 }
 
 function executeSearch() {
+    document.body.classList.remove('card-open'); // Reset layout on new search
     const searchInput = document.getElementById('search-bar');
     const query = searchInput ? searchInput.value.trim() : '';
     
@@ -337,9 +334,9 @@ function executeSearch() {
                 currentMarkers = [];
                 if (heatLayer) map.removeLayer(heatLayer);
                 
-                const heatData = matchedGems.map(gem => {
+                const heatData = matchedGems.map((gem, index) => {
                     bounds.push([gem.latitude, gem.longitude]);
-                    let intensity = (gem.personalScore && gem.personalScore >= 5) ? 1.0 : 0.6;
+                    let intensity = (index < 3 && gem.personalScore >= 5) ? 1.0 : 0.6; // Only top 3 glow hot
                     return [parseFloat(gem.latitude), parseFloat(gem.longitude), intensity];
                 });
 
@@ -349,11 +346,14 @@ function executeSearch() {
                 }).addTo(map);
             } else {
                 if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
-                matchedGems.forEach((gem) => {
+                
+                matchedGems.forEach((gem, index) => {
+                    // Check if it's in the top 3 AND has a good score
+                    gem.isTopMatch = (index < 3 && gem.personalScore >= 5);
+                    
                     let pinColor = '#00f0ff'; let pinRadius = 5; let pinOpacity = 0.8; let pinWeight = 0; 
                     if (currentRiderProfile) {
-                        // Toned down to Muted Gold, slightly smaller radius, 90% opacity
-                        if (gem.personalScore >= 5) { pinColor = '#D9B340'; pinRadius = 6.5; pinOpacity = 0.9; }
+                        if (gem.isTopMatch) { pinColor = '#D9B340'; pinRadius = 6.5; pinOpacity = 0.9; } 
                         else if (gem.personalScore < 0) { pinColor = '#555555'; pinRadius = 4; pinOpacity = 0.4; }
                     }
                     const marker = L.circleMarker([gem.latitude, gem.longitude], { 
@@ -547,8 +547,8 @@ function showLocationCard(gem) {
     }
 
     let topMatchHTML = '';
-    if (currentRiderProfile && gem.personalScore >= 5) {
-        topMatchHTML = `<div style="background: #FFD700; color: #000; font-size: 9px; font-weight: 900; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);">★ Top Match</div>`;
+    if (currentRiderProfile && gem.isTopMatch) {
+        topMatchHTML = `<div style="background: rgba(217, 179, 64, 0.1); color: #D9B340; border: 1px solid rgba(217, 179, 64, 0.4); font-size: 9px; font-weight: 900; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">★ Top Match</div>`;
     }
 
     const isFav = favoritedLocations.has(gem.locationName);
@@ -584,6 +584,20 @@ function showLocationCard(gem) {
         <a href="https://www.google.com/maps/dir/?api=1&destination=${gem.latitude},${gem.longitude}" target="_blank" id="start-route-btn">START ROUTE</a>
     `;
     card.style.display = 'flex';
+    
+    // Slide the search bar out of the way!
+    document.body.classList.add('card-open');
+
+    // Make the Close Button work and restore the search bar
+    const closeBtn = document.getElementById('close-card-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            card.style.display = 'none';
+            document.body.classList.remove('card-open');
+            if (routingControl) { map.removeLayer(routingControl); routingControl = null; }
+        });
+    }
 }
 
 // --- GUEST MODE ROUTING INTERCEPTOR ---
