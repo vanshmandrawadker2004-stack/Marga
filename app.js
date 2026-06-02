@@ -352,7 +352,8 @@ function executeSearch() {
                 matchedGems.forEach((gem) => {
                     let pinColor = '#00f0ff'; let pinRadius = 5; let pinOpacity = 0.8; let pinWeight = 0; 
                     if (currentRiderProfile) {
-                        if (gem.personalScore >= 5) { pinColor = '#FFD700'; pinRadius = 7; pinOpacity = 1; } 
+                        // Toned down to Muted Gold, slightly smaller radius, 90% opacity
+                        if (gem.personalScore >= 5) { pinColor = '#D9B340'; pinRadius = 6.5; pinOpacity = 0.9; }
                         else if (gem.personalScore < 0) { pinColor = '#555555'; pinRadius = 4; pinOpacity = 0.4; }
                     }
                     const marker = L.circleMarker([gem.latitude, gem.longitude], { 
