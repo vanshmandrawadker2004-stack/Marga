@@ -566,29 +566,54 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
 /* --- MOBILE RESPONSIVENESS BREAKPOINT (Phones) --- */
 @media screen and (max-width: 768px) {
     
-/* 1. TOP NAV ZONE (Forced Single Line) */
+/* 1. TOP NAV ZONE (Bulletproof Single Line) */
     #top-toolbar {
         position: fixed !important;
         top: 12px !important;
-        left: 12px !important;
-        right: 12px !important;
-        width: calc(100% - 24px) !important;
-        flex-wrap: nowrap !important; /* Force to one line */
+        left: 8px !important;
+        right: 8px !important;
+        width: calc(100% - 16px) !important;
+        flex-wrap: nowrap !important;
         justify-content: space-between !important;
-        gap: 4px !important; /* Extremely tight spacing */
+        align-items: center !important;
+        gap: 4px !important; 
         padding: 0 !important;
         z-index: 2500 !important;
+        overflow-x: visible !important;
     }
 
-    .toolbar-pill {
+    /* Target the buttons themselves to physically shrink them */
+    .toolbar-pill, .icon-btn {
         padding: 6px 8px !important; 
+        height: 38px !important; /* Force a strict height */
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         gap: 4px !important;
-        transform: scale(0.9); /* Subtly scale down the UI to fit smaller screens */
-        transform-origin: center;
+        transform: none !important; /* Remove the old scale trick */
+        font-size: 11px !important; /* Shrink any text that refuses to hide */
+        white-space: nowrap !important; /* Prevent text from stacking */
     }
 
+    /* Nuke any text elements to save maximum space */
+    .toolbar-pill span, 
+    .toolbar-pill p, 
+    .icon-btn span {
+        display: none !important; 
+    }
+
+    /* Shrink the SVGs/Icons slightly so they fit the new smaller buttons */
+    .toolbar-pill svg, .icon-btn svg {
+        width: 16px !important;
+        height: 16px !important;
+    }
+
+    /* Keep the profile circle tight */
     #profile-avatar {
-        transform: scale(0.9); 
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 14px !important;
+        flex-shrink: 0 !important; /* Prevent it from getting squished */
     }
 
     /* 2. SEARCH BAR ZONE (Anchored to the bottom) */
