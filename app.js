@@ -578,56 +578,34 @@ function showLocationCard(gem) {
     `;
     card.style.display = 'flex';
 
-    // --- NEW: GUEST MODE ROUTING INTERCEPTOR ---
+// --- GUEST MODE ROUTING INTERCEPTOR ---
     const startRouteBtn = document.getElementById('start-route-btn');
     if (startRouteBtn) {
         startRouteBtn.addEventListener('click', (e) => {
-            // Check if the user is actually logged in to Firebase
             if (!auth.currentUser) {
-                e.preventDefault(); // Stop Google Maps from opening
+                e.preventDefault(); 
+                card.style.display = 'none'; // Hide the map card
                 
-                // Hide the location card
-                card.style.display = 'none';
-                
-                // Bring the login screen back up
                 const loginCard = document.getElementById('login-card');
-                if (loginCard) loginCard.style.display = 'block'; 
-                
-                // Remove the guest UI state
+                if (loginCard) {
+                    loginCard.style.display = 'block'; 
+                    
+                    // Inject a sleek UI banner instead of a clunky alert
+                    let lockMsg = document.getElementById('guest-lock-msg');
+                    if (!lockMsg) {
+                        lockMsg = document.createElement('div');
+                        lockMsg.id = 'guest-lock-msg';
+                        lockMsg.style.cssText = "background: rgba(0, 240, 255, 0.05); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 12px; margin-bottom: 24px; font-size: 11px; font-weight: 800; text-align: center; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(0,240,255,0.1);";
+                        
+                        // Insert it at the top of the login card
+                        loginCard.insertBefore(lockMsg, loginCard.firstChild);
+                    }
+                    lockMsg.innerText = "Sign in to unlock live routing & telemetry";
+                }
                 document.body.classList.remove('logged-in');
-                
-                // Optional: You can replace this with a custom styled alert later
-                alert("Sign in to unlock live routing, premium telemetry, and save your favorite trails.");
             }
         });
     }
-    
-    const closeCardBtn = document.getElementById('close-card-btn');
-    if (closeCardBtn) closeCardBtn.addEventListener('click', () => card.style.display = 'none');
-
-    const favBtn = document.getElementById('fav-btn');
-    favBtn.addEventListener('click', async function() {
-        const currentUser = auth.currentUser;
-        const trailName = gem.locationName;
-
-        if (favoritedLocations.has(trailName)) {
-            favoritedLocations.delete(trailName);
-            this.style.color = '#555';
-            this.style.filter = 'none';
-            if (currentUser) {
-                await updateDoc(doc(db, "users", currentUser.uid), { savedTrails: arrayRemove(trailName) });
-            }
-        } else {
-            favoritedLocations.add(trailName);
-            this.style.color = '#ff0055'; 
-            this.style.filter = 'drop-shadow(0px 0px 8px rgba(255, 0, 85, 0.6))';
-            if (currentUser) {
-                await updateDoc(doc(db, "users", currentUser.uid), { savedTrails: arrayUnion(trailName) });
-            }
-        }
-        updateSavedTrailsSidebar();
-    });
-}
 
 function updateSavedTrailsSidebar() {
     const savedContainer = document.getElementById('saved-trails-list');

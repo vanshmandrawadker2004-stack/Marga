@@ -566,35 +566,41 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
 /* --- MOBILE RESPONSIVENESS BREAKPOINT (Phones) --- */
 @media screen and (max-width: 768px) {
     
-/* 1. TOP NAV ZONE (Allow wrapping & shrink buttons) */
+/* 1. TOP NAV ZONE (Forced Single Line) */
     #top-toolbar {
         position: fixed !important;
         top: 12px !important;
         left: 12px !important;
         right: 12px !important;
         width: calc(100% - 24px) !important;
-        flex-wrap: wrap !important; /* CRITICAL: Lets buttons drop to a new line if they don't fit */
+        flex-wrap: nowrap !important; /* Force to one line */
         justify-content: space-between !important;
-        gap: 6px !important;
+        gap: 4px !important; /* Extremely tight spacing */
         padding: 0 !important;
         z-index: 2500 !important;
     }
 
     .toolbar-pill {
-        padding: 6px 10px !important; /* Shrink the massive desktop padding */
-        gap: 6px !important;
+        padding: 6px 8px !important; 
+        gap: 4px !important;
+        transform: scale(0.9); /* Subtly scale down the UI to fit smaller screens */
+        transform-origin: center;
     }
 
-    /* 2. SEARCH BAR ZONE (Push lower to account for wrapped toolbar) */
+    #profile-avatar {
+        transform: scale(0.9); 
+    }
+
+    /* 2. SEARCH BAR ZONE (Anchored to the bottom) */
     #search-container {
         position: fixed !important;
-        top: 96px !important;       /* Pushed down to make room if toolbar wraps */
-        bottom: auto !important;    
+        top: auto !important;       /* Kills the top positioning */
+        bottom: 32px !important;    /* Pins it right above the screen edge */
         left: 12px !important;
         right: 12px !important;
         width: calc(100% - 24px) !important;
         transform: none !important;
-        z-index: 2400 !important;
+        z-index: 2400 !important;   /* This ensures the Location Card (3000) slides smoothly over it */
     }
     
     .search-pill {
