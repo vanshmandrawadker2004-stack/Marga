@@ -1,0 +1,9 @@
+# Security: NEVER upload API keys or database credentials
+.env
+firebase-service-account.json
+
+# Node modules (Massive folder, doesn't need to be tracked)
+node_modules/
+
+# Mac OS junk files
+.DS_Store

@@ -5,10 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marga</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
     <link rel="stylesheet" href="style.css">
+    
+    <style>
+        .mcq-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 32px;
+        }
+        .mcq-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #aaa;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-size: 13.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .mcq-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .mcq-option.selected {
+            background: rgba(0, 240, 255, 0.1);
+            border-color: #00f0ff;
+            color: #00f0ff;
+            font-weight: 700;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+        }
+    </style>
 </head>
 <body>
+
+    <div id="global-loader">
+        <div class="radar-loader"></div>
+        <div class="loader-text">Locating Hidden Gems...</div>
+    </div>
 
     <div id="login-card">
         <h2 class="widget-title">Marga</h2>
@@ -37,13 +73,47 @@
             Continue with Google
         </button>
         
-        <!-- Replace your current widget-footer with this -->
         <button id="guest-btn" style="width: 100%; background: transparent; border: 1px solid rgba(255, 255, 255, 0.2); color: #aaa; padding: 12px; border-radius: 8px; font-size: 15px; font-family: inherit; font-weight: 600; cursor: pointer; margin-top: 12px; margin-bottom: 16px; transition: background 0.2s, color 0.2s;">Preview as Guest</button>
         
         <p class="widget-footer">New rider? <a href="#">Create an account</a></p>
-    </div> <!-- End of login-card -->
-    </div>
+    </div> 
 
+    <div id="questionnaire-wrap" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0a0a0a; z-index: 3000; align-items: center; justify-content: center;">
+        
+        <div id="questionnaire-card" style="background: #121212; padding: 48px; border-radius: 24px; width: 500px; max-width: 90%; box-shadow: 0 24px 80px rgba(0,0,0,0.8); display: flex; flex-direction: column; border: 1px solid rgba(255,255,255,0.05);">
+            
+            <h2 style="color: #fff; margin: 0 0 8px 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">Rider Profile</h2>
+            <p style="color: #888; font-size: 15px; margin: 0 0 32px 0;">Tailor your Marga experience.</p>
+
+            <label style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">What do you ride? (Pick one)</label>
+            <div class="mcq-group" id="bike-group">
+                <div class="mcq-option" data-value="ADV">Adventure (ADV)</div>
+                <div class="mcq-option" data-value="Cruiser">Cruiser</div>
+                <div class="mcq-option" data-value="Sport">Sport / Street</div>
+                <div class="mcq-option" data-value="Classic">Classic / Cafe</div>
+                <div class="mcq-option" data-value="Commuter">Commuter</div>
+            </div>
+
+            <label style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">Experience Level (Pick one)</label>
+            <div class="mcq-group" id="skill-group">
+                <div class="mcq-option" data-value="Beginner">New Rider (1st Year)</div>
+                <div class="mcq-option" data-value="Intermediate">Intermediate (1-3 Years)</div>
+                <div class="mcq-option" data-value="Advanced">Advanced / Off-Road Vet</div>
+            </div>
+
+            <label style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">Ideal Vibe (Select multiple)</label>
+            <div class="mcq-group" id="vibe-group">
+                <div class="mcq-option multi" data-value="Twisties">Smooth Tarmac & Corners</div>
+                <div class="mcq-option multi" data-value="OffRoad">Dirt, Mud & Trails</div>
+                <div class="mcq-option multi" data-value="Chill">Sunsets & Cafe Stops</div>
+                <div class="mcq-option multi" data-value="Highway">Long Open Highways</div>
+            </div>
+
+            <button id="save-profile-btn" style="width: 100%; background: #00f0ff; color: #000; padding: 18px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 15px; margin-top: 8px; transition: transform 0.2s, box-shadow 0.2s;">Start Riding</button>
+        
+        </div>
+    </div>
+    
     <div class="hero-overlay">
         <div class="hero-brand">
             <h1 class="hero-title">Marga</h1>
@@ -59,75 +129,111 @@
         </div>
     </div>
 
-    <button id="menu-btn">☰</button>
+    <div id="top-toolbar">
+        
+        <div class="toolbar-group">
+            <div class="toolbar-pill">
+                <label class="icon-toggle" title="Petrol Pumps">
+                    <input type="checkbox" id="toggle-petrol" class="utility-toggle" data-query="petrol pump" style="display:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="15" y2="22"></line><line x1="4" y1="9" x2="14" y2="9"></line><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"></path><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"></path></svg>
+                </label>
+                <div class="divider-vertical"></div>
+                <label class="icon-toggle" title="Restaurants & Cafes">
+                    <input type="checkbox" id="toggle-food" class="utility-toggle" data-query="restaurant food cafe" style="display:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
+                </label>
+                <div class="divider-vertical"></div>
+                <label class="icon-toggle" title="Emergency Services">
+                    <input type="checkbox" id="toggle-emergency" class="utility-toggle" data-query="hospital clinic police" style="display:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                </label>
+            </div>
+        </div>
 
+        <div class="toolbar-group">
+            <div class="toolbar-pill">
+                
+                <div class="dropdown-container">
+                    <div class="icon-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    </div>
+                    <div class="dropdown-menu" id="saved-trails-list" style="width: 220px; max-height: 300px; overflow-y: auto; right: 0; left: auto;">
+                        <div style="font-size: 12px; color: #aaa;">No favorites saved yet.</div>
+                    </div>
+                </div>
+
+                <div class="divider-vertical"></div>
+
+                <div class="dropdown-container">
+                    <div class="icon-btn" style="padding-right: 4px;">
+                        <span style="font-size: 10px; font-weight: 800; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-right: 8px;">Radar</span>
+                        <label class="toggle-switch" style="transform: scale(0.85); margin-top: 2px;">
+                            <input type="checkbox" id="toggle-radar">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="divider-vertical"></div>
+                
+                <div class="dropdown-container">
+                    <div class="icon-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                        <span style="font-size: 13px; font-weight: 600; margin-left: 6px;">Filters</span>
+                    </div>
+                    
+                    <div class="dropdown-menu" style="width: 240px; right: 0; left: auto;">
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 8px; color: #ccc;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="toggle-distance" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span>Max Dist</span>
+                            </div>
+                            <span id="distance-val" style="color: #00f0ff; font-weight: 700;">100 km</span>
+                        </div>
+                        <input type="range" id="range-distance" min="10" max="200" value="100" style="width: 100%; margin-bottom: 24px;">
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 8px; color: #ccc;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="toggle-duration" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span>Max Time</span>
+                            </div>
+                            <span id="duration-val" style="color: #00f0ff; font-weight: 700;">2 hrs</span>
+                        </div>
+                        <input type="range" id="range-duration" min="0.5" max="10" step="0.5" value="2" style="width: 100%;">
+                        
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        
+        <div class="toolbar-group">
+            <div class="toolbar-pill dropdown-container">
+                <div id="profile-avatar" class="avatar-circle">G</div>
+                <div class="dropdown-menu" style="right: 0; left: auto;">
+                    <div id="profile-name">Guest Rider</div>
+                    <div id="profile-tag" style="color: #00f0ff; font-size: 11px; margin-bottom: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Preview Mode</div>
+                    <button id="logout-btn" class="dropdown-btn">Sign Out</button>
+                </div>
+            </div>
+        </div>
+        
+    </div>
     <div id="map"></div>
     <div id="location-card"></div>
 
-    <div id="sidebar">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-            <h1 style="color: #fff; font-size: 22px; margin: 0; font-weight: 700; letter-spacing: -0.5px;">Marga</h1>
-            <button id="close-drawer-btn" style="background: none; border: none; color: #888; font-size: 24px; cursor: pointer;">✕</button>
-        </div>
-        
-        <div style="display: flex; flex-direction: column;">
-            
-            <div style="padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-                <h3 style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 16px; font-weight: 600;">Favorites</h3>
-                <div id="saved-trails-list" style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="font-size: 12px; color: #444;">No favorites saved yet.</div>
-                </div>
-            </div>
-
-            <div style="padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-                <h3 style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 16px; font-weight: 600;">Last Searched</h3>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="#" class="history-item" data-query="Tamhini Ghat">Tamhini Ghat</a>
-                    <a href="#" class="history-item" data-query="Lonavala">Lonavala</a>
-                </div>
-            </div>
-
-            <div style="padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-                <h3 style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 16px; font-weight: 600;">Hot Spots</h3>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="#" class="history-item" data-query="Pune">Pune Start Points</a>
-                    <a href="#" class="history-item" data-query="Viewpoint">Top Viewpoints</a>
-                </div>
-            </div>
-
-            <div style="padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-                <h3 style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 20px; font-weight: 600;">Route Filters</h3>
-                <div style="margin-bottom: 24px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <label style="color: #ddd; font-size: 14px; display: flex; align-items: center;"><label class="toggle-switch"><input type="checkbox" id="toggle-distance"><span class="toggle-slider"></span></label>Max Distance</label>
-                        <span id="distance-val" style="color: #00f0ff; font-size: 13px; font-weight: 600; opacity: 0.3;">100 km</span>
-                    </div>
-                    <input type="range" id="range-distance" min="10" max="200" value="100" style="width: 100%;">
-                </div>
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <label style="color: #ddd; font-size: 14px; display: flex; align-items: center;"><label class="toggle-switch"><input type="checkbox" id="toggle-duration"><span class="toggle-slider"></span></label>Max Duration</label>
-                        <span id="duration-val" style="color: #00f0ff; font-size: 13px; font-weight: 600; opacity: 0.3;">2 hrs</span>
-                    </div>
-                    <input type="range" id="range-duration" min="0.5" max="10" step="0.5" value="2" style="width: 100%;">
-                </div>
-            </div>
-
-            <div style="padding-bottom: 24px;">
-                <h3 style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 20px; font-weight: 600;">Utilities</h3>
-                <div style="display: flex; flex-direction: column; gap: 16px;">
-                    <label class="checkbox-container">Petrol Pumps<input type="checkbox" id="toggle-petrol" class="utility-toggle" data-query="petrol pump"><span class="checkmark"></span></label>
-                    <label class="checkbox-container">Restaurants<input type="checkbox" id="toggle-food" class="utility-toggle" data-query="restaurant food cafe"><span class="checkmark"></span></label>
-                    <label class="checkbox-container">Emergency Services<input type="checkbox" id="toggle-emergency" class="utility-toggle" data-query="hospital clinic police"><span class="checkmark"></span></label>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-    <script src="app.js"></script>
-    <script defer src="/_vercel/insights/script.js"></script>
-    <script defer src="/_vercel/speed-insights/script.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.8.0/suncalc.min.js"></script>
+    
+    <script type="module" src="app.js"></script>
 </body>
 </html>
