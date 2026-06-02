@@ -577,6 +577,7 @@ function showLocationCard(gem) {
         <a href="https://www.google.com/maps/dir/?api=1&destination=${gem.latitude},${gem.longitude}" target="_blank" id="start-route-btn">START ROUTE</a>
     `;
     card.style.display = 'flex';
+}
 
 // --- GUEST MODE ROUTING INTERCEPTOR ---
     const startRouteBtn = document.getElementById('start-route-btn');
