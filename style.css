@@ -566,27 +566,30 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
 /* --- MOBILE RESPONSIVENESS BREAKPOINT (Phones) --- */
 @media screen and (max-width: 768px) {
     
-/* 1. TOP NAV ZONE (Locked to top, horizontally scrollable if tight) */
+/* 1. TOP NAV ZONE (Allow wrapping & shrink buttons) */
     #top-toolbar {
         position: fixed !important;
         top: 12px !important;
         left: 12px !important;
         right: 12px !important;
         width: calc(100% - 24px) !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        overflow-x: auto !important; /* Lets users swipe the toolbar if it overflows */
-        justify-content: flex-start !important;
-        gap: 8px !important;
+        flex-wrap: wrap !important; /* CRITICAL: Lets buttons drop to a new line if they don't fit */
+        justify-content: space-between !important;
+        gap: 6px !important;
         padding: 0 !important;
         z-index: 2500 !important;
     }
 
-    /* 2. SEARCH BAR ZONE (Forced under toolbar via ID) */
+    .toolbar-pill {
+        padding: 6px 10px !important; /* Shrink the massive desktop padding */
+        gap: 6px !important;
+    }
+
+    /* 2. SEARCH BAR ZONE (Push lower to account for wrapped toolbar) */
     #search-container {
         position: fixed !important;
-        top: 76px !important;       /* Locks it exactly below the toolbar */
-        bottom: auto !important;    /* Kills the desktop bottom positioning */
+        top: 96px !important;       /* Pushed down to make room if toolbar wraps */
+        bottom: auto !important;    
         left: 12px !important;
         right: 12px !important;
         width: calc(100% - 24px) !important;

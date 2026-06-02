@@ -577,6 +577,30 @@ function showLocationCard(gem) {
         <a href="https://www.google.com/maps/dir/?api=1&destination=${gem.latitude},${gem.longitude}" target="_blank" id="start-route-btn">START ROUTE</a>
     `;
     card.style.display = 'flex';
+
+    // --- NEW: GUEST MODE ROUTING INTERCEPTOR ---
+    const startRouteBtn = document.getElementById('start-route-btn');
+    if (startRouteBtn) {
+        startRouteBtn.addEventListener('click', (e) => {
+            // Check if the user is actually logged in to Firebase
+            if (!auth.currentUser) {
+                e.preventDefault(); // Stop Google Maps from opening
+                
+                // Hide the location card
+                card.style.display = 'none';
+                
+                // Bring the login screen back up
+                const loginCard = document.getElementById('login-card');
+                if (loginCard) loginCard.style.display = 'block'; 
+                
+                // Remove the guest UI state
+                document.body.classList.remove('logged-in');
+                
+                // Optional: You can replace this with a custom styled alert later
+                alert("Sign in to unlock live routing, premium telemetry, and save your favorite trails.");
+            }
+        });
+    }
     
     const closeCardBtn = document.getElementById('close-card-btn');
     if (closeCardBtn) closeCardBtn.addEventListener('click', () => card.style.display = 'none');
