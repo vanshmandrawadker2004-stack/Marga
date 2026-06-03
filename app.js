@@ -43,8 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const googleBtn = document.getElementById('google-login-btn');
     const guestBtn = document.getElementById('guest-btn');
     const logoutBtn = document.getElementById('logout-btn');
-    const loginCard = document.getElementById('login-card');
-    const qWrap = document.getElementById('questionnaire-wrap');
+    
+    const authModal = document.getElementById('auth-modal');
+    const loginStep = document.getElementById('login-step');
+    const qStep = document.getElementById('questionnaire-step');
     const saveProfileBtn = document.getElementById('save-profile-btn');
     const heroOverlay = document.querySelector('.hero-overlay');
 
@@ -58,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    async function routeUser(user) {
+   async function routeUser(user) {
         let userSnap = await getDoc(doc(db, "users", user.uid));
         
         if (!userSnap.exists()) {
@@ -68,12 +70,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const data = userSnap.data();
         if (data.bikeModel === "Unknown" || !data.bikeModel) {
-            loginCard.style.display = 'none'; 
-            qWrap.style.display = 'flex';
+            
+            // SHOW QUESTIONNAIRE (SAFELY)
+            if (authModal) {
+                authModal.style.display = 'block';
+                authModal.style.pointerEvents = 'auto';
+            }
+            
+            // Safe fallbacks to prevent crashes
+            if (loginStep) loginStep.style.opacity = '0'; 
+            
+            // Just in case your code still references the old loginCard variable
+            if (typeof loginCard !== 'undefined' && loginCard) {
+                loginCard.style.opacity = '0';
+            }
+            
+            setTimeout(() => {
+                if (loginStep) loginStep.classList.remove('active-view');
+                if (qStep) qStep.classList.add('active-view'); 
+                
+                setTimeout(() => { if (qStep) qStep.style.opacity = '1'; }, 50);
+            }, 300);
+
             if (heroOverlay) heroOverlay.style.display = 'none';
+
         } else {
             currentRiderProfile = data;
-            
             favoritedLocations.clear();
             if (data.savedTrails && data.savedTrails.length > 0) {
                 data.savedTrails.forEach(trail => favoritedLocations.add(trail));
@@ -84,11 +106,16 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('profile-avatar').innerText = (user.displayName || user.email)[0].toUpperCase();
             document.getElementById('profile-tag').innerText = `${data.bikeModel} | ${data.skillLevel}`;
             
-            loginCard.style.display = 'none'; 
-            qWrap.style.display = 'none';
+            // HIDE MODAL (SAFELY)
+            document.body.classList.add('logged-in'); 
+            if (authModal) {
+                authModal.style.opacity = '0';
+                authModal.style.pointerEvents = 'none';
+                setTimeout(() => authModal.style.display = 'none', 500); 
+            }
             if (heroOverlay) heroOverlay.style.display = 'none';
             
-            document.body.classList.add('logged-in'); 
+            // THIS FIRES THE PINS
             executeSearch();
         }
     }
@@ -96,13 +123,24 @@ document.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, (user) => {
         if (user) routeUser(user);
         else {
-            loginCard.style.display = 'block'; 
-            qWrap.style.display = 'none';
-            if (heroOverlay) heroOverlay.style.display = 'flex';
-            
             document.body.classList.remove('logged-in');
             document.body.classList.remove('menu-open'); 
             document.body.classList.remove('card-open'); 
+            
+            if (authModal) {
+                authModal.style.display = 'block';
+                setTimeout(() => {
+                    authModal.style.opacity = '1';
+                    authModal.style.pointerEvents = 'auto';
+                }, 10);
+            }
+            
+            qStep.classList.remove('active-view');
+            qStep.style.opacity = '0';
+            loginStep.classList.add('active-view');
+            loginStep.style.opacity = '1';
+
+            if (heroOverlay) heroOverlay.style.display = 'flex';
             
             const locCard = document.getElementById('location-card');
             if (locCard) locCard.style.display = 'none';
@@ -128,7 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedSkill = document.querySelector('#skill-group .mcq-option.selected')?.getAttribute('data-value') || 'Beginner';
         const selectedVibes = Array.from(document.querySelectorAll('#vibe-group .mcq-option.selected')).map(el => el.getAttribute('data-value'));
         
-        qWrap.style.display = 'none'; 
+        document.body.classList.add('logged-in'); 
+        if (authModal) {
+            authModal.style.opacity = '0';
+            authModal.style.pointerEvents = 'none';
+            setTimeout(() => authModal.style.display = 'none', 500); 
+        }
         
         await updateDoc(doc(db, "users", user.uid), { bikeModel: selectedBike, skillLevel: selectedSkill, idealVibes: selectedVibes });
         routeUser(user);
@@ -163,15 +206,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (guestBtn) {
         guestBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            loginCard.style.display = 'none'; 
-            qWrap.style.display = 'none';
+            document.body.classList.add('logged-in');
+            
+            if (authModal) {
+                authModal.style.opacity = '0';
+                authModal.style.pointerEvents = 'none';
+                setTimeout(() => authModal.style.display = 'none', 500); 
+            }
             if (heroOverlay) heroOverlay.style.display = 'none';
             
             document.getElementById('profile-name').innerText = "Guest Rider";
             document.getElementById('profile-avatar').innerText = "G";
             document.getElementById('profile-tag').innerText = "Preview Mode";
             
-            document.body.classList.add('logged-in');
             executeSearch(); 
         });
     }
@@ -224,7 +271,7 @@ function parseConversationalQuery(rawQuery) {
 }
 
 function executeSearch() {
-    document.body.classList.remove('card-open'); // Reset layout on new search
+    document.body.classList.remove('card-open'); 
     const searchInput = document.getElementById('search-bar');
     const query = searchInput ? searchInput.value.trim() : '';
     
@@ -336,7 +383,7 @@ function executeSearch() {
                 
                 const heatData = matchedGems.map((gem, index) => {
                     bounds.push([gem.latitude, gem.longitude]);
-                    let intensity = (index < 3 && gem.personalScore >= 5) ? 1.0 : 0.6; // Only top 3 glow hot
+                    let intensity = (index < 3 && gem.personalScore >= 5) ? 1.0 : 0.6; 
                     return [parseFloat(gem.latitude), parseFloat(gem.longitude), intensity];
                 });
 
@@ -348,7 +395,6 @@ function executeSearch() {
                 if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
                 
                 matchedGems.forEach((gem, index) => {
-                    // Check if it's in the top 3 AND has a good score
                     gem.isTopMatch = (index < 3 && gem.personalScore >= 5);
                     
                     let pinColor = '#00f0ff'; let pinRadius = 5; let pinOpacity = 0.8; let pinWeight = 0; 
@@ -425,7 +471,7 @@ function calculateRoute(destLat, destLng) {
             const sunsetEl = document.getElementById('leave-sunset-val');
             
             if (sunriseEl) sunriseEl.innerText = `Leave by ${formatTime(leaveSunrise)}`;
-            if (sunsetEl) sunsetEl.innerText = `Leave by ${formatTime(leaveSunset)}`;
+            if (sunsetEl) sunriseEl.innerText = `Leave by ${formatTime(leaveSunset)}`;
         }
         
     }).catch(err => console.error("Routing Error:", err));
@@ -562,9 +608,14 @@ function showLocationCard(gem) {
                 <div style="color: #00f0ff; font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;">${gem.vibeType || 'Adventure'}</div>
                 <h2 style="font-size: 28px; margin: 0; line-height: 1.1; font-weight: 800; letter-spacing: -1px; color: #ffffff;">${gem.locationName}</h2>
             </div>
-            <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="share-btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); color: #555; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; flex-shrink: 0; display: flex; justify-content: center; align-items: center; transition: all 0.2s;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                </button>
                 <button id="fav-btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); color: ${initialHeartColor}; filter: ${initialGlow}; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; flex-shrink: 0; display: flex; justify-content: center; align-items: center; font-size: 18px;">♥</button>
-                <button id="close-card-btn" style="background: none; border: none; color: #666; font-size: 24px; cursor: pointer; padding: 0; margin-top: -4px; transition: color 0.2s;">✕</button>
+                <button id="close-card-btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); color: #555; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; flex-shrink: 0; display: flex; justify-content: center; align-items: center; transition: all 0.2s;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
             </div>
         </div>
         
@@ -585,10 +636,8 @@ function showLocationCard(gem) {
     `;
     card.style.display = 'flex';
     
-    // Slide the search bar out of the way!
     document.body.classList.add('card-open');
 
-    // Make the Close Button work and restore the search bar
     const closeBtn = document.getElementById('close-card-btn');
     if (closeBtn) {
         closeBtn.addEventListener('click', (e) => {
@@ -596,6 +645,40 @@ function showLocationCard(gem) {
             card.style.display = 'none';
             document.body.classList.remove('card-open');
             if (routingControl) { map.removeLayer(routingControl); routingControl = null; }
+        });
+    }
+
+    const shareBtn = document.getElementById('share-btn');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            
+            const shareData = {
+                title: `Marga: ${gem.locationName}`,
+                text: `Check out the ${gem.locationName} trail on Marga!\n\n${gem.description}\n\n`,
+                url: window.location.href 
+            };
+
+            try {
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                } else {
+                    await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+                    
+                    const originalHtml = shareBtn.innerHTML;
+                    shareBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                    shareBtn.style.borderColor = '#00f0ff';
+                    shareBtn.style.background = 'rgba(0, 240, 255, 0.1)';
+                    
+                    setTimeout(() => {
+                        shareBtn.innerHTML = originalHtml;
+                        shareBtn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                        shareBtn.style.background = 'rgba(255, 255, 255, 0.05)';
+                    }, 2000);
+                }
+            } catch (err) {
+                console.log('Share action cancelled or failed.', err);
+            }
         });
     }
 }
@@ -609,21 +692,30 @@ if (startRouteBtn) {
             const card = document.getElementById('location-card');
             if(card) card.style.display = 'none'; 
             
-            const loginCard = document.getElementById('login-card');
-            if (loginCard) {
-                loginCard.style.display = 'block'; 
-                
-                let lockMsg = document.getElementById('guest-lock-msg');
-                if (!lockMsg) {
-                    lockMsg = document.createElement('div');
-                    lockMsg.id = 'guest-lock-msg';
-                    lockMsg.style.cssText = "background: rgba(0, 240, 255, 0.05); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 12px; margin-bottom: 24px; font-size: 11px; font-weight: 800; text-align: center; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(0,240,255,0.1);";
-                    
-                    loginCard.insertBefore(lockMsg, loginCard.firstChild);
-                }
-                lockMsg.innerText = "Sign in to unlock live routing & telemetry";
-            }
             document.body.classList.remove('logged-in');
+            
+            const aModal = document.getElementById('auth-modal');
+            if (aModal) {
+                aModal.style.display = 'block';
+                setTimeout(() => {
+                    aModal.style.opacity = '1';
+                    aModal.style.pointerEvents = 'auto';
+                }, 10);
+            }
+            
+            const loginStep = document.getElementById('login-step');
+            const qStep = document.getElementById('questionnaire-step');
+            
+            if (qStep) { qStep.classList.remove('active-view'); qStep.style.opacity = '0'; }
+            if (loginStep) { loginStep.classList.add('active-view'); loginStep.style.opacity = '1'; }
+            
+            if (loginStep && !document.getElementById('guest-lock-msg')) {
+                let lockMsg = document.createElement('div');
+                lockMsg.id = 'guest-lock-msg';
+                lockMsg.style.cssText = "background: rgba(0, 240, 255, 0.05); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 12px; margin-bottom: 24px; font-size: 11px; font-weight: 800; text-align: center; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(0,240,255,0.1);";
+                lockMsg.innerText = "Sign in to unlock live routing & telemetry";
+                loginStep.insertBefore(lockMsg, loginStep.firstChild);
+            }
         }
     });
 }
@@ -702,11 +794,9 @@ document.querySelectorAll('.utility-toggle').forEach(toggle => {
 const searchBarInput = document.getElementById('search-bar');
 if (searchBarInput) searchBarInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') { e.preventDefault(); executeSearch(); } });
 
-// --- THE RADAR WIRE ---
 const radarToggle = document.getElementById('toggle-radar');
 if (radarToggle) radarToggle.addEventListener('change', () => executeSearch());
 
-// --- GLOBAL LOADER REMOVAL (WITH FAILSAFE) ---
 window.addEventListener('load', () => {
     setTimeout(() => {
         const loader = document.getElementById('global-loader');
@@ -717,24 +807,6 @@ window.addEventListener('load', () => {
 setTimeout(() => {
     const loader = document.getElementById('global-loader');
     if (loader && !loader.classList.contains('hidden')) {
-        console.warn("Failsafe triggered: Forced loader removal.");
         loader.classList.add('hidden');
     }
 }, 3000);
-
-// --- DATABASE SEEDING UTILITY ---
-async function batchUploadTrails() {
-    console.log("Starting batch upload of premium trails...");
-    let count = 0;
-    for (const gem of newHiddenGems) {
-        try {
-            const docId = gem.locationName.replace(/\s+/g, '-').toLowerCase(); 
-            await setDoc(doc(db, "trails", docId), gem);
-            count++;
-            console.log(`Uploaded: ${gem.locationName}`);
-        } catch (error) {
-            console.error(`Failed to upload ${gem.locationName}:`, error);
-        }
-    }
-    console.log(`SUCCESS! Uploaded ${count} new trails to Firebase.`);
-}

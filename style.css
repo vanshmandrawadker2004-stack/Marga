@@ -316,13 +316,13 @@ body:not(.logged-in) #top-toolbar {
 }
 
 /* Add Spring Physics to all interactive buttons */
-.icon-toggle, .icon-btn, .search-pill button, .widget-btn, #fav-btn {
+.icon-toggle, .icon-btn, .search-pill button, .widget-btn, #fav-btn, #share-btn {
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
                 background 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 /* Tactile Push-In Effect when clicked */
-.icon-toggle:active, .icon-btn:active, .search-pill button:active, .widget-btn:active, #fav-btn:active {
+.icon-toggle:active, .icon-btn:active, .search-pill button:active, .widget-btn:active, #fav-btn:active, #share-btn:active {
     transform: scale(0.92) !important; 
 }
 
@@ -718,3 +718,52 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
         font-size: 14px;
     }
 }
+
+/* --- THE SEAMLESS AUTH MODAL --- */
+#auth-modal {
+    position: absolute; 
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%); 
+    
+    background: rgba(30, 30, 35, 0.5); 
+    backdrop-filter: blur(24px) saturate(200%); 
+    -webkit-backdrop-filter: blur(24px) saturate(200%); 
+    border: 1px solid rgba(255, 255, 255, 0.15); 
+    border-radius: 24px; 
+    z-index: 6000;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1); 
+    
+    /* Smooth width/height morphing */
+    transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1), 
+                height 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+                opacity 0.5s ease, transform 0.5s ease;
+    
+    overflow: hidden; 
+}
+
+body.logged-in #auth-modal { 
+    opacity: 0 !important; 
+    pointer-events: none !important; 
+    transform: translate(-50%, -55%) scale(0.95) !important; 
+}
+
+.auth-view {
+    opacity: 0;
+    visibility: hidden;
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    padding: 32px 24px; 
+    transition: opacity 0.3s ease; /* Only fade opacity here */
+    pointer-events: none;
+}
+
+.auth-view.active-view {
+    opacity: 1;
+    visibility: visible;
+    position: relative; 
+    pointer-events: auto;
+}
+
+#login-step { width: 340px; }
+#questionnaire-step { width: 420px; }
