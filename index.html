@@ -46,55 +46,49 @@
         <div class="loader-text">Locating Hidden Gems...</div>
     </div>
 
-    <div id="login-card">
-        <h2 class="widget-title">Marga</h2>
-        <p class="widget-subtitle">Unlock premium riding trails</p>
+    <div id="auth-modal" class="glass-panel">
+        
+        <div id="login-step" class="auth-view active-view">
+            <h2 class="widget-title">Marga</h2>
+            <p class="widget-subtitle">Unlock premium riding trails</p>
 
-        <input id="login-email" type="email" placeholder="Rider Email" class="widget-input">
-        <input id="login-pass" type="password" placeholder="Password" class="widget-input">
-        
-        <div class="forgot-pass-container">
-            <a href="#" class="forgot-pass-link">Forgot password?</a>
-        </div>
-        
-        <button id="login-submit-btn" class="widget-btn">Continue</button>
-        
-        <div class="divider">
-            <span>or</span>
-        </div>
+            <input id="login-email" type="email" placeholder="Rider Email" class="widget-input">
+            <input id="login-pass" type="password" placeholder="Password" class="widget-input">
+            
+            <div class="forgot-pass-container">
+                <a href="#" class="forgot-pass-link">Forgot password?</a>
+            </div>
+            
+            <button id="login-submit-btn" class="widget-btn">Continue</button>
+            
+            <div class="divider">
+                <span>or</span>
+            </div>
 
-        <button id="google-login-btn" class="google-btn">
-            <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            Continue with Google
-        </button>
-        
-        <button id="guest-btn" style="width: 100%; background: transparent; border: 1px solid rgba(255, 255, 255, 0.2); color: #aaa; padding: 12px; border-radius: 8px; font-size: 15px; font-family: inherit; font-weight: 600; cursor: pointer; margin-top: 12px; margin-bottom: 16px; transition: background 0.2s, color 0.2s;">Preview as Guest</button>
-        
-        <p class="widget-footer">New rider? <a href="#">Create an account</a></p>
+            <button id="google-login-btn" class="google-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Continue with Google
+            </button>
+            
+            <button id="guest-btn" style="width: 100%; background: transparent; border: 1px solid rgba(255, 255, 255, 0.2); color: #aaa; padding: 12px; border-radius: 8px; font-size: 15px; font-family: inherit; font-weight: 600; cursor: pointer; margin-top: 12px; margin-bottom: 16px; transition: background 0.2s, color 0.2s;">Preview as Guest</button>
+            
+            <p class="widget-footer">New rider? <a href="#">Create an account</a></p>
 
-        <!-- ADDED: The 5-Minute Liability Shield & Privacy Link -->
-        <div class="legal-disclaimer" style="margin-top: 24px; padding: 16px 12px 4px 12px; font-size: 11px; color: #777; text-align: center; line-height: 1.5; border-top: 1px solid rgba(255,255,255,0.05);">
-            <strong>Important Disclaimer:</strong> Marga is an experimental beta tool that algorithmically aggregates public trail and route data. Motorcycling and off-roading are inherently dangerous activities. By using this app, you acknowledge that you assume 100% of the physical, financial, and legal risks. Marga does not guarantee road conditions or route legality. Always obey local laws, respect private property, and ride within your limits.
-            <div style="margin-top: 12px;">
-                <a href="/privacy" style="color: #00f0ff; text-decoration: none; font-weight: 600; letter-spacing: 0.5px; opacity: 0.8; transition: opacity 0.2s;">Privacy Policy</a>
+            <div class="legal-disclaimer" style="margin-top: 24px; padding: 16px 12px 4px 12px; font-size: 11px; color: #777; text-align: center; line-height: 1.5; border-top: 1px solid rgba(255,255,255,0.05);">
+                <strong>Important Disclaimer:</strong> Marga is an experimental beta tool that algorithmically aggregates public trail and route data. Motorcycling and off-roading are inherently dangerous activities. By using this app, you acknowledge that you assume 100% of the physical, financial, and legal risks. Marga does not guarantee road conditions or route legality. Always obey local laws, respect private property, and ride within your limits.
             </div>
         </div>
 
-    </div> 
-
-    <div id="questionnaire-wrap" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0a0a0a; z-index: 3000; align-items: center; justify-content: center;">
-        
-        <div id="questionnaire-card" style="background: #121212; padding: 48px; border-radius: 24px; width: 500px; max-width: 90%; box-shadow: 0 24px 80px rgba(0,0,0,0.8); display: flex; flex-direction: column; border: 1px solid rgba(255,255,255,0.05);">
-            
+        <div id="questionnaire-step" class="auth-view">
             <h2 style="color: #fff; margin: 0 0 8px 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">Rider Profile</h2>
             <p style="color: #888; font-size: 15px; margin: 0 0 32px 0;">Tailor your Marga experience.</p>
 
-            <label style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">What do you ride? (Pick one)</label>
+            <label style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; display: block;">What do you ride? (Pick one)</label>
             <div class="mcq-group" id="bike-group">
                 <div class="mcq-option" data-value="ADV">Adventure (ADV)</div>
                 <div class="mcq-option" data-value="Cruiser">Cruiser</div>
@@ -103,14 +97,14 @@
                 <div class="mcq-option" data-value="Commuter">Commuter</div>
             </div>
 
-            <label style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">Experience Level (Pick one)</label>
+            <label style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; display: block;">Experience Level (Pick one)</label>
             <div class="mcq-group" id="skill-group">
                 <div class="mcq-option" data-value="Beginner">New Rider (1st Year)</div>
                 <div class="mcq-option" data-value="Intermediate">Intermediate (1-3 Years)</div>
                 <div class="mcq-option" data-value="Advanced">Advanced / Off-Road Vet</div>
             </div>
 
-            <label style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">Ideal Vibe (Select multiple)</label>
+            <label style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; display: block;">Ideal Vibe (Select multiple)</label>
             <div class="mcq-group" id="vibe-group">
                 <div class="mcq-option multi" data-value="Twisties">Smooth Tarmac & Corners</div>
                 <div class="mcq-option multi" data-value="OffRoad">Dirt, Mud & Trails</div>
@@ -119,10 +113,9 @@
             </div>
 
             <button id="save-profile-btn" style="width: 100%; background: #00f0ff; color: #000; padding: 18px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 15px; margin-top: 8px; transition: transform 0.2s, box-shadow 0.2s;">Start Riding</button>
-        
         </div>
+
     </div>
-    
     <div class="hero-overlay">
         <div class="hero-brand">
             <h1 class="hero-title">Marga</h1>
@@ -243,6 +236,6 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.8.0/suncalc.min.js"></script>
     
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=1.5"></script>
 </body>
 </html>
