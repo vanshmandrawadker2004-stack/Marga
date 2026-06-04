@@ -50,6 +50,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveProfileBtn = document.getElementById('save-profile-btn');
     const heroOverlay = document.querySelector('.hero-overlay');
 
+    // WIRING UP THE NEW QUICK SEARCH CHIPS
+    document.querySelectorAll('.chip-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const searchBar = document.getElementById('search-bar');
+            if(searchBar) {
+                searchBar.value = this.getAttribute('data-query');
+                executeSearch();
+            }
+        });
+    });
+
     document.querySelectorAll('.mcq-option').forEach(btn => {
         btn.addEventListener('click', function() {
             if (this.classList.contains('multi')) this.classList.toggle('selected');
@@ -60,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-   async function routeUser(user) {
+    async function routeUser(user) {
         let userSnap = await getDoc(doc(db, "users", user.uid));
         
         if (!userSnap.exists()) {
@@ -70,17 +82,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const data = userSnap.data();
         if (data.bikeModel === "Unknown" || !data.bikeModel) {
-            
-            // SHOW QUESTIONNAIRE (SAFELY)
             if (authModal) {
                 authModal.style.display = 'block';
                 authModal.style.pointerEvents = 'auto';
             }
-            
-            // Safe fallbacks to prevent crashes
             if (loginStep) loginStep.style.opacity = '0'; 
             
-            // Just in case your code still references the old loginCard variable
             if (typeof loginCard !== 'undefined' && loginCard) {
                 loginCard.style.opacity = '0';
             }
@@ -106,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('profile-avatar').innerText = (user.displayName || user.email)[0].toUpperCase();
             document.getElementById('profile-tag').innerText = `${data.bikeModel} | ${data.skillLevel}`;
             
-            // HIDE MODAL (SAFELY)
             document.body.classList.add('logged-in'); 
             if (authModal) {
                 authModal.style.opacity = '0';
@@ -115,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (heroOverlay) heroOverlay.style.display = 'none';
             
-            // THIS FIRES THE PINS
             executeSearch();
         }
     }
@@ -135,10 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 10);
             }
             
-            qStep.classList.remove('active-view');
-            qStep.style.opacity = '0';
-            loginStep.classList.add('active-view');
-            loginStep.style.opacity = '1';
+            if (qStep) { qStep.classList.remove('active-view'); qStep.style.opacity = '0'; }
+            if (loginStep) { loginStep.classList.add('active-view'); loginStep.style.opacity = '1'; }
 
             if (heroOverlay) heroOverlay.style.display = 'flex';
             
@@ -260,7 +263,8 @@ function parseConversationalQuery(rawQuery) {
     if (minMatch) cleanText = cleanText.replace(minMatch[0], '');
     if (kmMatch) cleanText = cleanText.replace(kmMatch[0], '');
 
-    const fillerWords = ['i','want','to','go','for','a','ride','show','me','some','places','near','around','the','is','are','in','on','at','with','under','less','than','away','from','here','find','search','within','max','that','take','takes','it','will','which','have','has','can','you','my','give','we','do','any','would','love','looking','out','there','hours','hour','hrs','hr','h','minutes','minute','mins','min','m','kms','km','kilometers','kilometer','of'];
+    // Added 'pradesh', 'nadu', 'state' and others to filler words
+    const fillerWords = ['pradesh','nadu','state','rides','ride','trail','trails','place','places','i','want','to','go','for','a','show','me','some','near','around','the','is','are','in','on','at','with','under','less','than','away','from','here','find','search','within','max','that','take','takes','it','will','which','have','has','can','you','my','give','we','do','any','would','love','looking','out','there','hours','hour','hrs','hr','h','minutes','minute','mins','min','m','kms','km','kilometers','kilometer','of'];
     
     cleanText.split(/\s+/).forEach(word => {
         const cleanWord = word.replace(/[^a-z0-9]/g, ''); 
@@ -305,19 +309,70 @@ function executeSearch() {
     getDocs(collection(db, "trails")).then(snapshot => {
         const data = snapshot.docs.map(doc => doc.data());
 
+        const featureWords = ['ghat', 'ghats', 'coast', 'coastal', 'sunrise', 'sunset', 'forest', 'jungle', 'offroad', 'dirt', 'mountain', 'lake', 'waterfall', 'viewpoint', 'highway', 'chill', 'twisties', 'adventure', 'scenic', 'corners'];
+        const locationKeywords = smartQuery.searchKeywords.filter(kw => !featureWords.includes(kw));
+
+        // 2. Master State-to-City Alias Mapping
+        const aliasMap = {
+            'bangalore': ['chikkaballapur', 'tumkur', 'magadi', 'hosur', 'anekal', 'doddaballapura', 'ramanagara', 'kanakapura', 'kalavara', 'bengaluru'],
+            'bengaluru': ['chikkaballapur', 'tumkur', 'magadi', 'hosur', 'anekal', 'doddaballapura', 'ramanagara', 'kanakapura', 'kalavara', 'bangalore'],
+            'pune': ['lonavala', 'bhor', 'satara', 'mahabaleshwar', 'pune', 'kalyan'],
+            'mumbai': ['kalyan', 'igatpuri', 'mumbai', 'thane', 'lonavala'],
+            
+            // State Level Routing
+            'maharashtra': ['pune', 'kalyan', 'lonavala', 'satara', 'chiplun', 'shrivardhan', 'sawantwadi', 'igatpuri', 'bhor', 'ratnagiri', 'amravati', 'aurangabad', 'mahabaleshwar', 'samrad', 'mumbai', 'thane'],
+            'karnataka': ['chikkaballapur', 'tumkur', 'magadi', 'hosur', 'anekal', 'doddaballapura', 'ramanagara', 'kanakapura', 'kalavara', 'bengaluru', 'bangalore', 'mudigere', 'udupi', 'sakleshpur', 'chikmagalur', 'kalasa', 'gundlupet', 'chamarajanagar', 'kundapura', 'kollur', 'sagara', 'dandeli', 'kumta', 'gokarna', 'hospet', 'madikeri', 'karwar'],
+            'tamil': ['salem', 'pollachi', 'ooty', 'chennai', 'rameswaram', 'theni', 'palani', 'tirunelveli', 'coonoor', 'vaniyambadi', 'jolarpettai', 'chidambaram', 'dindigul', 'kodaikanal', 'devadanapatti', 'tenkasi', 'nagercoil'],
+            'kerala': ['wayanad', 'munnar', 'kannur', 'vagamon', 'trivandrum', 'alappuzha', 'kottayam', 'pathanamthitta', 'thrissur', 'marayoor', 'varkala', 'idukki', 'palakkad', 'kasaragod', 'kozhikode', 'kumily'],
+            'andhra': ['visakhapatnam', 'narsipatnam', 'jammalamadugu', 'kurnool', 'madanapalle', 'rajahmundry', 'sullurpeta', 'kakinada', 'macherla', 'nandikotkur'],
+            'telangana': ['hyderabad', 'nalgonda', 'vikarabad', 'adilabad', 'mahabubnagar', 'mulugu', 'warangal'],
+            'rajasthan': ['abu road', 'jaisalmer', 'kumbhalgarh', 'sambhar', 'sumerpur', 'nathdwara', 'barmer', 'kota', 'ranakpur'],
+            'gujarat': ['bhuj', 'sasan gir', 'rapar', 'saputara', 'dwarka', 'idar', 'lakhpat', 'dasada', 'mandvi', 'kevadia'],
+            'himachal': ['sonamarg', 'sarchu', 'pang', 'lukung', 'hunder', 'killar', 'kaza', 'shoja', 'manali', 'narkanda', 'rohru'],
+            'uttarakhand': ['badrinath', 'pithoragarh', 'ukhimath', 'joshimath', 'dehradun'],
+            'ladakh': ['leh', 'sonamarg', 'sarchu', 'pang', 'lukung', 'hunder'],
+            'sikkim': ['gangtok', 'lachen', 'lachung'],
+            'meghalaya': ['shillong', 'dawki', 'cherrapunji'],
+            'assam': ['bokakhat', 'jorhat', 'guwahati'],
+            'madhya': ['pipariya', 'dhar', 'hoshangabad', 'jabalpur', 'chhindwara', 'bhopal', 'indore'],
+            'chhattisgarh': ['jagdalpur', 'dantewada', 'ambikapur', 'raipur'],
+            'odisha': ['puri', 'kandhamal', 'jeypore', 'baripada', 'satapada', 'bhubaneswar'],
+            'jharkhand': ['ranchi', 'latehar'],
+            'bihar': ['bhabua', 'bettiah', 'patna'],
+            'west': ['kurseong', 'kalimpong', 'bankura', 'kolkata', 'darjeeling']
+        };
+
+        let expandedLocKeywords = [...locationKeywords];
+        locationKeywords.forEach(kw => {
+            if (aliasMap[kw]) expandedLocKeywords.push(...aliasMap[kw]);
+        });
+
         let matchedGems = data.filter(gem => {
             let isMatch = true;
             if (!gem.latitude || !gem.longitude) return false;
+            
+            // UPGRADE: Regex Word Boundary Match instead of .includes()
+            const isExplicitTargetSearch = expandedLocKeywords.some(kw => {
+                const regex = new RegExp(`\\b${kw}\\b`, 'i'); // \b ensures exact word match
+                return (gem.anchorCity && regex.test(gem.anchorCity)) ||
+                       (gem.locationName && regex.test(gem.locationName)) ||
+                       (gem.description && regex.test(gem.description));
+            });
+
             const distKm = map.distance([userLat, userLng], [gem.latitude, gem.longitude]) / 1000;
             let currentMaxKm = 200; 
+            
             if (smartQuery.extractedMaxKm) currentMaxKm = smartQuery.extractedMaxKm;
             else if (isDistActive) currentMaxKm = parseInt(document.getElementById('range-distance').value);
-            if (distKm > currentMaxKm) isMatch = false;
+            
+            if (!isExplicitTargetSearch && distKm > currentMaxKm) isMatch = false;
 
             if (isMatch) {
-                const estTime = gem.rideTimeMinutes || (distKm * 1.5);
-                if (smartQuery.extractedMaxMins) { if (estTime > smartQuery.extractedMaxMins) isMatch = false; } 
-                else if (isDurActive) { const maxDurHrs = parseFloat(document.getElementById('range-duration').value); if (estTime > (maxDurHrs * 60)) isMatch = false; }
+                if (!isExplicitTargetSearch) {
+                    const estTime = gem.rideTimeMinutes || (distKm * 1.5);
+                    if (smartQuery.extractedMaxMins) { if (estTime > smartQuery.extractedMaxMins) isMatch = false; } 
+                    else if (isDurActive) { const maxDurHrs = parseFloat(document.getElementById('range-duration').value); if (estTime > (maxDurHrs * 60)) isMatch = false; }
+                }
             }
 
             if (isMatch && activeUtilities.length > 0) {
@@ -336,7 +391,6 @@ function executeSearch() {
 
         matchedGems = matchedGems.map(gem => {
             let personalScore = 0;
-            
             let gemText = `${gem.vibeType || ''} ${gem.category || ''} ${gem.description || ''} ${gem.subCategory || ''}`.toLowerCase();
             
             if (gem.category === 'Mountain' || gem.category === 'Scenic') gemText += " sunrise sunset view nature photography morning evening twilight ";
@@ -362,18 +416,25 @@ function executeSearch() {
             }
 
             if (smartQuery.searchKeywords.length > 0) {
-                smartQuery.searchKeywords.forEach(kw => {
-                    if (gem.locationName?.toLowerCase().includes(kw)) personalScore += 10;
-                    else if (gemText.includes(kw)) personalScore += 2;
+                const scoringKeywords = [...smartQuery.searchKeywords, ...expandedLocKeywords];
+                
+                scoringKeywords.forEach(kw => {
+                    const regex = new RegExp(`\\b${kw}\\b`, 'i'); // Word boundary upgrade here too
+                    
+                    if (gem.locationName && regex.test(gem.locationName)) personalScore += 10;
+                    else if (gem.anchorCity && regex.test(gem.anchorCity)) personalScore += 10; 
+                    else if (gem.description && regex.test(gem.description)) personalScore += 8;
+                    else if (regex.test(gemText)) personalScore += 2;
                 });
                 if (personalScore <= 0) return null; 
             }
             return { ...gem, personalScore };
         }).filter(gem => gem !== null);
+        
         matchedGems.sort((a, b) => b.personalScore - a.personalScore);
 
         if (matchedGems.length > 0) {
-            let bounds = [[userLat, userLng]];
+            let bounds = [];
             const isRadarMode = document.getElementById('toggle-radar')?.checked;
 
             if (isRadarMode) {
@@ -471,7 +532,7 @@ function calculateRoute(destLat, destLng) {
             const sunsetEl = document.getElementById('leave-sunset-val');
             
             if (sunriseEl) sunriseEl.innerText = `Leave by ${formatTime(leaveSunrise)}`;
-            if (sunsetEl) sunriseEl.innerText = `Leave by ${formatTime(leaveSunset)}`;
+            if (sunsetEl) sunsetEl.innerText = `Leave by ${formatTime(leaveSunset)}`;
         }
         
     }).catch(err => console.error("Routing Error:", err));
