@@ -1,299 +1,565 @@
-import { YoutubeTranscript } from 'youtube-transcript';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import ytSearch from 'yt-search'; 
-import fetch from 'node-fetch'; 
-import dotenv from 'dotenv'; 
-import admin from 'firebase-admin';
-import { readFileSync } from 'fs';
-
-// 🛑 INITIALIZE ENVIRONMENT VARIABLES & FIREBASE 🛑
-dotenv.config();
-
-// Make sure you have downloaded this file from your Firebase Project Settings
-const serviceAccount = JSON.parse(readFileSync('./firebase-service-account.json', 'utf8'));
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-
-const db = admin.firestore();
-const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN; 
-
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// --- THE MATHEMATICAL ENGINE: Haversine Distance Formula ---
-function calculateDistanceKm(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-}
-
-// --- UPGRADED MAPBOX VERIFICATION ENGINE (With Fallback Search) ---
-async function verifyCoordinates(gem) {
-    try {
-        const puneLat = 18.5204;
-        const puneLng = 73.8567;
-        
-        // --- STEP 1: Find the True Anchor ---
-        let anchorCoords = null;
-        if (gem.anchorCity) {
-            const anchorQuery = encodeURIComponent(`${gem.anchorCity}, India`);
-            const anchorUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${anchorQuery}.json?access_token=${MAPBOX_TOKEN}&limit=1`;
-            const anchorRes = await fetch(anchorUrl);
-            const anchorData = await anchorRes.json();
-            
-            if (anchorData.features && anchorData.features.length > 0) {
-                anchorCoords = {
-                    lng: anchorData.features[0].center[0],
-                    lat: anchorData.features[0].center[1]
-                };
-            }
-        }
-
-        // --- STEP 2: The Two-Stage Fallback Search ---
-        let resultLng = null;
-        let resultLat = null;
-
-        // Attempt 1: Strict Search (Name + Anchor City)
-        const query1 = encodeURIComponent(`${gem.locationName}, ${gem.anchorCity ? gem.anchorCity + ',' : ''} Maharashtra, India`);
-        const url1 = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query1}.json?access_token=${MAPBOX_TOKEN}&limit=1`;
-        let response = await fetch(url1);
-        let data = await response.json();
-
-        if (data.features && data.features.length > 0) {
-            resultLng = data.features[0].center[0];
-            resultLat = data.features[0].center[1];
-        } else {
-            // Attempt 2: Broad Search (Drop the Anchor City, Mapbox often gets confused by regional boundaries)
-            const query2 = encodeURIComponent(`${gem.locationName}, Maharashtra, India`);
-            const url2 = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query2}.json?access_token=${MAPBOX_TOKEN}&limit=1`;
-            response = await fetch(url2);
-            data = await response.json();
-
-            if (data.features && data.features.length > 0) {
-                resultLng = data.features[0].center[0];
-                resultLat = data.features[0].center[1];
-            }
-        }
-
-        // If both searches fail, reject it.
-        if (!resultLng || !resultLat) {
-            return null;
-        }
-            
-        // --- STEP 3: THE WATERFALL FILTERS ---
-        
-        // Filter 1: The City-Center Kill Switch (15km limit)
-        const distanceToCityCenter = calculateDistanceKm(puneLat, puneLng, resultLat, resultLng);
-        const natureCategories = ['Ghat', 'Trail', 'Viewpoint', 'Off-Road', 'Lake'];
-        
-        if (natureCategories.includes(gem.category) && distanceToCityCenter < 15) {
-            console.log(`    🛑 BLOCKED: "${gem.locationName}" mapped inside Pune city limits. False positive.`);
-            return null;
-        }
-
-        // Filter 2: The Anchor Leash (Expanded to 200km for longer rides)
-        if (anchorCoords) {
-            const distToAnchor = calculateDistanceKm(anchorCoords.lat, anchorCoords.lng, resultLat, resultLng);
-            
-            if (distToAnchor > 200) {
-                console.log(`    🛑 BLOCKED: "${gem.locationName}" is ${distToAnchor.toFixed(1)}km away from anchor (${gem.anchorCity}). Hallucination.`);
-                return null;
-            }
-        }
-
-        return { lng: resultLng, lat: resultLat };
-
-    } catch (error) {
-        console.error(`    ⚠️ Mapbox API error for ${gem.locationName}`);
-        return null;
-    }
-}
-
-// --- THE SINGLE VIDEO ENGINE ---
-async function huntForGems(videoUrl) {
-    try {
-        const transcriptArray = await YoutubeTranscript.fetchTranscript(videoUrl);
-        const rawText = transcriptArray.map(t => t.text).join(' ');
-        
-        if (rawText.length === 0) throw new Error("Transcript empty.");
-        console.log(`  ✅ Downloaded transcript. Handing to Gemini...`);
-
-        const prompt = `
-        You are an expert geographical data extraction engine for "Marga". 
-        Extract ONLY specific mountain passes (Ghats), off-road dirt trails, hidden lakes, and highly technical riding roads mentioned in this vlog transcript.
-
-        CRITICAL RULES:
-        1. THE KILL SWITCH: Completely IGNORE national highways, petrol pumps, cities, generic restaurants, dhabas, and major tourist traps. If it is not a distinct riding route or hidden nature spot, DO NOT extract it.
-        2. Naming & Hygiene: Use the REAL, specific map name or proper noun (e.g., 'Tikona Fort', 'Pawna Lake'). NEVER include descriptive paths or conversational filler like 'Route to...'. 
-        3. "anchorCity" MUST be the nearest localized town or sub-region hub (e.g., "Lonavala", "Kamshet", "Mulshi"). If it is a generic ride around Pune's outskirts, use "Pune".
-        4. "category" MUST be exactly one of: "Ghat", "Trail", "Viewpoint", "Off-Road", or "Lake". (Do NOT use "Cafe/Restaurant").
-        5. Keep "description" under 40 words, packed with sensory terrain keywords.
-        6. "distanceKm" and "rideTimeMinutes" MUST be null.
-        7. "breakfastStop" and "cafe" MUST be a real mentioned name, or null.
-
-        OUTPUT FORMAT (JSON Array ONLY):
-        [
-          {
-            "locationName": "Specific Name Here",
-            "anchorCity": "Lonavala",
-            "category": "Ghat",
-            "subCategory": "Twisty Tarmac",
-            "vibeType": "Adventure",
-            "description": "A dense, misty forest route famous for tight cornering and smooth tarmac.",
-            "distanceKm": null,
-            "rideTimeMinutes": null,
-            "breakfastStop": null,
-            "cafe": null,
-            "petrolPump": true,
-            "emergency": false,
-            "images": []
-          }
-        ]
-
-        Transcript: 
-        ${rawText}
-        `;
-
-        const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
-        let result = null;
-        let retries = 3;
-
-        while (retries > 0) {
-            try {
-                result = await model.generateContent(prompt);
-                break; 
-            } catch (err) {
-                if (err.message && (err.message.includes('503') || err.message.includes('429'))) {
-                    const errorType = err.message.includes('429') ? '429 Rate Limit' : '503 Overloaded';
-                    // FIXED: Increased backoff cooldown from 45s to 90s to let token buckets clear out completely
-                    console.log(`    ⚠️ Gemini API hit a speed bump (${errorType}). Cooling down for 90 seconds... (${retries - 1} attempts left)`);
-                    await sleep(90000); 
-                    retries--;
-                } else {
-                    throw err; 
-                }
-            }
-        }
-
-        if (!result) throw new Error("Gemini API failed after 3 retries. Wait a few hours for your quota to reset.");
-        
-        let cleanText = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-        const extractedData = JSON.parse(cleanText);
-        
-        console.log(`  💎 Gemini found ${extractedData.length} potential locations. Verifying with Mapbox...`);
-
-        const verifiedGems = [];
-        
-        for (let gem of extractedData) {
-            const coords = await verifyCoordinates(gem); 
-            
-            if (coords) {
-                gem.latitude = coords.lat;
-                gem.longitude = coords.lng;
-                verifiedGems.push(gem);
-                console.log(`    ✔️ Verified: ${gem.locationName}`);
-            } else {
-                console.log(`    ❌ Rejected: ${gem.locationName}`);
-            }
-            
-            await sleep(500); 
-        }
-
-        return verifiedGems;
-
-    } catch (error) {
-        console.log(`  ❌ Skipped Video (${videoUrl}):`, error.message);
-        return []; 
-    }
-}
-
-// --- THE FIREBASE BATCH AUTOMATION LOOP ---
-async function runBatchScraper(urls) {
-    console.log(`\n🚀 INITIALIZING EXTRACTION FOR ${urls.length} VIDEOS...\n`);
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marga - Curated places for every kind of ride.</title>
     
-    let existingNames = [];
-    try {
-        console.log(`📂 Downloading existing trail registry from Firestore...`);
-        const snapshot = await db.collection('trails').get();
-        existingNames = snapshot.docs.map(doc => doc.data().locationName.toLowerCase());
-        console.log(`✅ Loaded ${existingNames.length} existing entries.`);
-    } catch (error) {
-        console.log(`⚠️ Could not reach Firestore database. Starting fresh.`, error.message);
-    }
-
-    for (let i = 0; i < urls.length; i++) {
-        console.log(`\n--- Processing Video ${i + 1} of ${urls.length} ---`);
-        console.log(`▶️ URL: ${urls[i]}`);
-        
-        const newGems = await huntForGems(urls[i]);
-        
-        if (newGems.length > 0) {
-            let addedCount = 0;
-            
-            for (const gem of newGems) {
-                const isDuplicate = existingNames.includes(gem.locationName.toLowerCase());
-
-                if (!isDuplicate) {
-                    const cleanGem = {
-                        ...gem,
-                        createdAt: admin.firestore.FieldValue.serverTimestamp()
-                    };
-                    
-                    const docId = gem.locationName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                    
-                    await db.collection('trails').doc(docId).set(cleanGem);
-                    existingNames.push(gem.locationName.toLowerCase()); 
-                    
-                    console.log(`    ☁️ Saved to Firestore: "${gem.locationName}"`);
-                    addedCount++;
-                } else {
-                    console.log(`    ♻️ Skipped Cloud Duplicate: "${gem.locationName}" is already in Firestore.`);
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- Google Fonts for Gateway -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    
+    <!-- Tailwind Configuration -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffffff",
+                        "background": "#0a0a0c"
+                    },
+                    spacing: {
+                        "container-max": "1600px",
+                        "margin-mobile": "20px",
+                        "margin-desktop": "40px"
+                    },
+                    fontFamily: {
+                        "display-xl": ["Outfit"],
+                        "body-md": ["Outfit"],
+                        "display-xl-mobile": ["Outfit"],
+                        "label-mono": ["JetBrains Mono"],
+                        "body-lg": ["Outfit"],
+                        "headline-lg": ["Outfit"]
+                    }
                 }
             }
+        }
+    </script>
 
-            console.log(`✨ Processed video. Added ${addedCount} new entries to the cloud.`);
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        /* Force Input Placeholders */
+        .widget-input::placeholder {
+            color: #888888 !important;
+            opacity: 1 !important;
+            font-weight: 500 !important;
         }
 
-        if (i < urls.length - 1) {
-            // FIXED: Increased baseline cooling period from 15 seconds to 65 seconds to completely flush the TPM quota ceiling
-            console.log(`⏳ Cooling down for 65 seconds to completely reset minute-by-minute Token limits...`);
-            await sleep(65000); 
+        /* MCQ Styles for Auth Modal */
+        .mcq-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 32px;
         }
-    }
-    console.log(`\n🏁 BATCH COMPLETE!`);
-}
-
-// --- THE NEW AUTOPILOT DISCOVERY ENGINE ---
-async function autoDiscoverAndScrape(searchQuery, maxVideos) {
-    console.log(`\n🕵️‍♂️ AUTOPILOT ENGAGED: Searching YouTube for "${searchQuery}"...`);
-
-    try {
-        const searchResults = await ytSearch(searchQuery);
-        const videos = searchResults.videos.slice(0, maxVideos);
-
-        if (videos.length === 0) {
-            console.log("❌ No videos found for that query.");
-            return;
+        .mcq-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #aaa;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-size: 13.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .mcq-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .mcq-option.selected {
+            background: rgba(0, 240, 255, 0.1);
+            border-color: #00f0ff;
+            color: #00f0ff;
+            font-weight: 700;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+        }
+        
+        /* Gateway Specific Styles */
+        .volumetric-spotlight {
+            background: radial-gradient(circle at 30% 20%, rgba(40, 60, 80, 0.15) 0%, rgba(20, 30, 40, 0.05) 40%, rgba(0, 0, 0, 0) 70%);
+            mix-blend-mode: screen;
+        }
+        .glass-panel-search {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(48px) saturate(180%);
+            -webkit-backdrop-filter: blur(48px) saturate(180%);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        .glass-button {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255, 255, 255, 0.15);
+        }
+        .oled-glow {
+            text-shadow: 0 0 40px rgba(255, 255, 255, 0.15);
         }
 
-        console.log(`✅ Found ${videos.length} videos! Assembling playlist...\n`);
+        /* --- THE GATEWAY LOCK & UNLOCK --- */
+        body.gateway-active #top-toolbar,
+        body.gateway-active #search-container,
+        body.gateway-active #global-loader {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+        
+        body:not(.gateway-active) #search-container,
+        body:not(.gateway-active) #top-toolbar {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            transition: opacity 0.8s ease-in-out, visibility 0.8s ease-in-out;
+        }
 
-        const autoPlaylist = videos.map(v => v.url);
-        videos.forEach((v, i) => console.log(`   ${i + 1}. ${v.title}`));
+        /* --- GATEWAY AUTH TOGGLE --- */
+        body.logged-in #gateway-join-btn { display: none !important; }
+        body:not(.logged-in) #gateway-user-menu { display: none !important; }
+    </style>
+</head>
 
-        await runBatchScraper(autoPlaylist);
+<body class="bg-[#050507] text-white gateway-active">
 
-    } catch (error) {
-        console.error("❌ Autopilot search failed:", error);
-    }
-}
+    <!-- PHYSICAL BLUR OVERLAY (Click to dismiss) -->
+    <div id="modal-blur-overlay" onclick="window.closeAuthModal()" style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(5,5,7,0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 999990; cursor: pointer; opacity: 0; transition: opacity 0.3s ease;"></div>
 
-// 🎯 START THE ENGINE ON AUTOPILOT!
-autoDiscoverAndScrape("Pune motorcycle hidden trails weekend ride", 30);
+    <!-- THE MARGA GATEWAY OVERLAY -->
+    <div id="marga-gateway" class="absolute inset-0 z-[999] text-primary min-h-screen font-body-md antialiased selection:bg-primary/20 selection:text-primary overflow-y-auto transition-all duration-700 ease-in-out" style="pointer-events: auto;">
+        
+        <div class="fixed inset-0 z-[-1] pointer-events-none" 
+             style="background: 
+                linear-gradient(to bottom, transparent 0vh, transparent 30vh, #050507 50vh, #050507 100vh),
+                linear-gradient(to right, #050507 0%, #050507 48%, rgba(5,5,7,0.7) 65%, transparent 100%);">
+        </div>
+
+        <div class="fixed inset-0 volumetric-spotlight pointer-events-none z-0" style="mask-image: linear-gradient(to right, black 0%, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to right, black 0%, black 50%, transparent 100%);"></div>
+        
+        <!-- Navigation Bar -->
+        <nav class="fixed top-0 w-full z-50 transition-all duration-300 ease-in-out bg-[#050507]">
+            <div class="flex justify-between items-center h-20 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto border-b border-white/5" style="border-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.05) 50%, transparent 100%) 1;">
+                <div class="flex items-center gap-3">
+                    <span class="font-display-xl text-[22px] font-bold tracking-widest text-primary uppercase opacity-90">Marga</span>
+                </div>
+                
+                <div class="hidden md:flex items-center">
+                    <!-- Shows when NOT logged in -->
+                    <button id="gateway-join-btn" type="button" onclick="window.launchApp('join')" class="bg-primary text-[#050507] font-body-md font-medium px-6 py-2 rounded-full hover:bg-white/90 transition-colors shadow-lg cursor-pointer">
+                        Join Club
+                    </button>
+                    
+                    <!-- Shows when logged in (Matches Screenshot) -->
+                    <button id="gateway-user-menu" onclick="window.launchApp()" class="flex items-center gap-3 bg-[#111113] border border-white/5 pl-4 pr-1.5 py-1.5 rounded-[24px] hover:bg-white/5 transition-colors cursor-pointer shadow-lg">
+                        <span id="gateway-welcome-text" class="text-[14px] font-medium text-white/90">Welcome</span>
+                        <div id="gateway-user-avatar" class="flex items-center justify-center rounded-full bg-[#00f0ff] text-black font-bold text-[15px]" style="width: 32px; height: 32px; min-width: 32px;">G</div>
+                    </button>
+                </div>
+                <button class="md:hidden text-primary opacity-80">
+                    <span class="material-symbols-outlined text-[24px]">menu</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="relative z-10 pt-[140px] pb-24">
+            <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+                
+                <div class="flex flex-col gap-12 mb-20">
+                    <!-- Hero Section -->
+                    <section class="max-w-[1200px] relative w-full mb-32"> 
+
+                        <div class="mb-6">
+                            <span class="font-label-mono text-primary/40 uppercase tracking-[0.3em] text-[13px]">Discover</span>
+                        </div>
+                        <h1 class="text-5xl md:text-7xl lg:text-[110px] font-display-xl text-primary mb-10 leading-[0.9] tracking-[-0.04em] oled-glow">
+                            Curated places for<br/>every kind of ride.
+                        </h1>
+                        <!-- GateWay Search Bar -->
+                        <div class="glass-panel-search rounded-full p-1.5 flex items-center max-w-3xl relative group transition-all duration-500 hover:bg-white/[0.05]"> 
+                            <div class="pl-5 pr-2 text-primary/50 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[20px]">search</span>
+                            </div>
+                            <input id="gateway-search" 
+                                   oninput="document.getElementById('search-bar').value = this.value; document.getElementById('search-bar').dispatchEvent(new Event('input', {bubbles:true}));"
+                                   onkeypress="if(event.key === 'Enter') window.launchApp()" 
+                                   class="bg-transparent border-none text-primary font-body-lg w-full focus:ring-0 placeholder:text-primary/30 h-12 outline-none pr-[60px]" 
+                                   placeholder="Search places or routes..." 
+                                   type="text"/>
+                            <!-- STRICTLY CENTERED CIRCLE BUTTON -->
+                            <button onclick="window.launchApp()" class="transition-all absolute cursor-pointer rounded-full right-1.5" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 44px !important; height: 44px !important; min-width: 44px !important; min-height: 44px !important; padding: 0 !important; margin: 0 !important; background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; box-shadow: none !important; box-sizing: border-box !important;">
+                                <span class="material-symbols-outlined text-[20px]" style="margin: 0 !important; padding: 0 !important; display: block !important; line-height: 1 !important;">arrow_forward</span>
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Categories Section -->
+                    <section class="pt-12 relative z-10">
+                        <h2 class="font-label-mono text-primary/40 uppercase tracking-[0.3em] mb-6 text-[14px] font-medium">Categories</h2>
+                        <div class="flex flex-row flex-wrap gap-8 md:gap-14">
+                            <a onclick="window.launchApp('Viewpoints')" class="flex flex-col items-center gap-4 group cursor-pointer w-[72px]">
+                                <div class="flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-1">
+                                    <span class="material-symbols-outlined text-[30px] text-primary/70 font-light group-hover:text-primary transition-colors">landscape</span>
+                                </div>
+                                <span class="font-body-md text-primary/50 text-[13px] group-hover:text-primary transition-colors tracking-wide text-center">Viewpoints</span>
+                            </a>
+                            <a onclick="window.launchApp('Routes')" class="flex flex-col items-center gap-4 group cursor-pointer w-[72px]">
+                                <div class="flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-1">
+                                    <span class="material-symbols-outlined text-[30px] text-primary/70 font-light group-hover:text-primary transition-colors">route</span>
+                                </div>
+                                <span class="font-body-md text-primary/50 text-[13px] group-hover:text-primary transition-colors tracking-wide text-center">Routes</span>
+                            </a>
+                            <a onclick="window.launchApp('Lakes')" class="flex flex-col items-center gap-4 group cursor-pointer w-[72px]">
+                                <div class="flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-1">
+                                    <span class="material-symbols-outlined text-[30px] text-primary/70 font-light group-hover:text-primary transition-colors">water</span>
+                                </div>
+                                <span class="font-body-md text-primary/50 text-[13px] group-hover:text-primary transition-colors tracking-wide text-center">Lakes</span>
+                            </a>
+                            <a onclick="window.launchApp('Dams')" class="flex flex-col items-center gap-4 group cursor-pointer w-[72px]">
+                                <div class="flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-1">
+                                    <span class="material-symbols-outlined text-[30px] text-primary/70 font-light group-hover:text-primary transition-colors">waves</span>
+                                </div>
+                                <span class="font-body-md text-primary/50 text-[13px] group-hover:text-primary transition-colors tracking-wide text-center">Dams</span>
+                            </a>
+                            <a onclick="window.launchApp('Ghats')" class="flex flex-col items-center gap-4 group cursor-pointer w-[72px]">
+                                <div class="flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-1">
+                                    <span class="material-symbols-outlined text-[30px] text-primary/70 font-light group-hover:text-primary transition-colors">terrain</span>
+                                </div>
+                                <span class="font-body-md text-primary/50 text-[13px] group-hover:text-primary transition-colors tracking-wide text-center">Ghats</span>
+                            </a>
+                            <a onclick="window.launchApp('Off-Road')" class="flex flex-col items-center gap-4 group cursor-pointer w-[72px]">
+                                <div class="flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-1">
+                                    <span class="material-symbols-outlined text-[30px] text-primary/70 font-light group-hover:text-primary transition-colors">explore</span>
+                                </div>
+                                <span class="font-body-md text-primary/50 text-[13px] group-hover:text-primary transition-colors tracking-wide text-center">Off-Road</span>
+                            </a>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- DYNAMIC SMART CARDS SECTION -->
+                <section>
+                    <div class="flex justify-between items-end mb-8">
+                        <h2 class="font-label-mono text-primary/40 uppercase tracking-[0.3em] text-[14px] font-medium">Top Rides Near You</h2>
+                    </div>
+                    <!-- Empty container to be filled by app.js -->
+                    <div id="recommended-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full xl:w-5/6">
+                        <div class="col-span-3 text-primary/40 text-[13px] italic animate-pulse">Locating the best rides near you...</div>
+                    </div>
+                </section>
+                
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="w-full py-16 relative z-10 bg-[#050507]">
+            <div class="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto gap-12 border-t border-white/5" style="border-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.05) 50%, transparent 100%) 1;">
+                <div class="flex flex-col md:flex-row items-center gap-4 md:gap-8 pt-8">
+                    <span class="font-display-xl-mobile md:font-display-xl text-[20px] text-primary/80 uppercase tracking-widest font-bold">Marga</span>
+                    <span class="font-label-mono text-primary/30 text-[10px] uppercase text-center md:text-left tracking-widest">
+                        © 2026 MARGA MOTORCYCLE DISCOVERY. ALL RIGHTS RESERVED.
+                    </span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- EXISTING MAP ENGINE COMPONENTS -->
+    <div id="global-loader">
+        <div class="radar-loader"></div>
+        <div class="loader-text">Locating Hidden Gems...</div>
+    </div>
+
+    <!-- HIDDEN AUTH MODAL -->
+    <div id="auth-modal" class="glass-panel" onclick="if(event.target === this) window.closeAuthModal()" style="display: none; z-index: 999999 !important;">
+        
+        <!-- EXPLICIT INLINE STYLES FOR LOGIN VIEW TRANSITION -->
+        <div id="login-step" class="auth-view active-view" style="display: block; opacity: 1; transition: opacity 0.3s ease;">
+            <h2 class="widget-title">Marga</h2>
+            <p class="widget-subtitle" style="margin-bottom: 32px;">Unlock premium riding trails</p>
+
+            <input id="login-email" type="email" placeholder="Rider Email" class="widget-input" style="background: rgba(255,255,255,0.05) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.1) !important; padding: 16px !important; border-radius: 12px !important; width: 100% !important; margin-bottom: 12px !important; box-sizing: border-box !important;">
+            
+            <input id="login-pass" type="password" placeholder="Password" class="widget-input" style="background: rgba(255,255,255,0.05) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.1) !important; padding: 16px !important; border-radius: 12px !important; width: 100% !important; margin-bottom: 8px !important; box-sizing: border-box !important;">
+
+            <div class="forgot-pass-container" style="text-align: right; margin-bottom: 24px;">
+                <a href="#" class="forgot-pass-link" style="color: #888; font-size: 12px; text-decoration: none;">Forgot password?</a>
+            </div>
+
+            <button id="login-submit-btn" class="widget-btn" style="width: 100%; background: #ffffff; color: #000000; font-weight: 800; padding: 16px; border-radius: 12px; border: none; cursor: pointer; font-size: 16px; margin-bottom: 24px;">Continue</button>
+
+            <div class="divider" style="display: flex; align-items: center; margin-bottom: 24px; color: #555; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">
+                <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+                <span style="padding: 0 12px;">or</span>
+                <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+            </div>
+
+            <button id="google-login-btn" class="google-btn" style="width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 12px; transition: background 0.2s;">
+                <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Continue with Google
+            </button>
+
+            <button id="guest-btn" style="width: 100%; background: transparent; border: 1px solid rgba(255, 255, 255, 0.1); color: #aaa; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 24px; transition: background 0.2s, color 0.2s;">Preview as Guest</button>
+
+            <!-- WIRED UP CREATE ACCOUNT BUTTON -->
+            <p class="widget-footer" style="text-align: center; color: #888; font-size: 14px; margin-bottom: 24px;">
+                New rider? <a href="#" onclick="document.getElementById('login-submit-btn').innerText = 'Sign Up'; document.getElementById('login-email').focus(); return false;" style="color: #fff; font-weight: 700; text-decoration: none;">Create an account</a>
+            </p>
+
+            <div class="legal-disclaimer" style="padding-top: 16px; font-size: 11px; color: #666; text-align: center; line-height: 1.5; border-top: 1px solid rgba(255,255,255,0.05);">
+                <strong>Important Disclaimer:</strong> Marga is an experimental beta tool that algorithmically aggregates public trail and route data.
+            </div>
+        </div>
+
+        <!-- EXPLICIT INLINE STYLES FOR QUESTIONNAIRE VIEW TRANSITION -->
+        <div id="questionnaire-step" class="auth-view" style="display: none; opacity: 0; transition: opacity 0.3s ease;">
+            <h2 style="color: #fff; margin: 0 0 8px 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">Rider Profile</h2>
+            <p style="color: #888; font-size: 15px; margin: 0 0 32px 0;">Tailor your Marga experience.</p>
+
+            <label style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; display: block;">What do you ride? (Pick one)</label>
+            <div class="mcq-group" id="bike-group">
+                <div class="mcq-option" data-value="ADV">Adventure (ADV)</div>
+                <div class="mcq-option" data-value="Cruiser">Cruiser</div>
+                <div class="mcq-option" data-value="Sport">Sport / Street</div>
+                <div class="mcq-option" data-value="Classic">Classic / Cafe</div>
+                <div class="mcq-option" data-value="Commuter">Commuter</div>
+            </div>
+
+            <label style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; display: block;">Experience Level (Pick one)</label>
+            <div class="mcq-group" id="skill-group">
+                <div class="mcq-option" data-value="Beginner">New Rider (1st Year)</div>
+                <div class="mcq-option" data-value="Intermediate">Intermediate (1-3 Years)</div>
+                <div class="mcq-option" data-value="Advanced">Advanced / Off-Road Vet</div>
+            </div>
+
+            <label style="color: #666; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; display: block;">Ideal Vibe (Select multiple)</label>
+            <div class="mcq-group" id="vibe-group">
+                <div class="mcq-option multi" data-value="Twisties">Smooth Tarmac & Corners</div>
+                <div class="mcq-option multi" data-value="OffRoad">Dirt, Mud & Trails</div>
+                <div class="mcq-option multi" data-value="Chill">Sunsets & Cafe Stops</div>
+                <div class="mcq-option multi" data-value="Highway">Long Open Highways</div>
+            </div>
+
+            <button id="save-profile-btn" style="width: 100%; background: #00f0ff; color: #000; padding: 18px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 15px; margin-top: 8px; transition: transform 0.2s, box-shadow 0.2s;">Start Riding</button>
+        </div>
+    </div>
+
+    <!-- MAIN MAP SEARCH CONTAINER -->
+    <div class="search-container w-full max-w-[650px] mx-auto px-4" id="search-container">
+        
+        <div class="quick-search-chips w-full flex overflow-x-auto pb-2" id="quick-search-chips" style="scrollbar-width: none;">
+            <button class="chip-btn" data-query="ghat">Ghats</button>
+            <button class="chip-btn" data-query="coast">Coastal</button>
+            <button class="chip-btn" data-query="sunrise">Sunrise</button>
+            <button class="chip-btn" data-query="forest">Forest</button>
+            <button class="chip-btn" data-query="offroad">Off-Road</button>
+            <div style="min-width: 8px; flex-shrink: 0;"></div>
+        </div>
+
+        <div class="glass-panel-search rounded-full p-1.5 flex items-center w-full relative group transition-all duration-500 hover:bg-white/[0.05]" style="background: rgba(10, 10, 12, 0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.1);">
+            <div class="pl-4 pr-2 text-primary/50 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px]">search</span>
+            </div>
+            <input type="text" id="search-bar" class="bg-transparent border-none text-primary font-body-lg w-full focus:ring-0 placeholder:text-primary/30 h-12 outline-none text-[15px] pr-[60px]" placeholder="Try '2 hour ride' or 'waterfall'...">
+            
+            <button id="search-btn" class="transition-all absolute cursor-pointer rounded-full right-1.5" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 44px !important; height: 44px !important; min-width: 44px !important; min-height: 44px !important; padding: 0 !important; margin: 0 !important; background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; box-shadow: none !important; box-sizing: border-box !important;">
+                <span class="material-symbols-outlined text-[20px]" style="margin: 0 !important; padding: 0 !important; display: block !important; line-height: 1 !important;">arrow_forward</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="top-toolbar">
+        <div class="toolbar-group">
+            <div class="toolbar-pill">
+                <label class="icon-toggle" title="Petrol Pumps">
+                    <input type="checkbox" id="toggle-petrol" class="utility-toggle" data-query="petrol pump" style="display:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="15" y2="22"></line><line x1="4" y1="9" x2="14" y2="9"></line><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"></path><path d="M14 13h2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"></path></svg>
+                </label>
+                <div class="divider-vertical"></div>
+                <label class="icon-toggle" title="Restaurants & Cafes">
+                    <input type="checkbox" id="toggle-food" class="utility-toggle" data-query="restaurant food cafe" style="display:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
+                </label>
+                <div class="divider-vertical"></div>
+                <label class="icon-toggle" title="Emergency Services">
+                    <input type="checkbox" id="toggle-emergency" class="utility-toggle" data-query="hospital clinic police" style="display:none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                </label>
+            </div>
+        </div>
+
+        <div class="toolbar-group">
+            <div class="toolbar-pill">
+                <div class="dropdown-container">
+                    <div class="icon-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    </div>
+                    <div class="dropdown-menu" id="saved-trails-list" style="width: 220px; max-height: 300px; overflow-y: auto; right: 0; left: auto;">
+                        <div style="font-size: 12px; color: #aaa;">No favorites saved yet.</div>
+                    </div>
+                </div>
+
+                <div class="divider-vertical"></div>
+
+                <div class="dropdown-container">
+                    <div class="icon-btn" style="padding-right: 4px;">
+                        <span style="font-size: 10px; font-weight: 800; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-right: 8px;">Radar</span>
+                        <label class="toggle-switch" style="transform: scale(0.85); margin-top: 2px;">
+                            <input type="checkbox" id="toggle-radar">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="divider-vertical"></div>
+
+                <div class="dropdown-container">
+                    <div class="icon-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                        <span style="font-size: 13px; font-weight: 600; margin-left: 6px;">Filters</span>
+                    </div>
+
+                    <div class="dropdown-menu" style="width: 240px; right: 0; left: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 8px; color: #ccc;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="toggle-distance" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span>Max Dist</span>
+                            </div>
+                            <span id="distance-val" style="color: #00f0ff; font-weight: 700;">100 km</span>
+                        </div>
+                        <input type="range" id="range-distance" min="10" max="200" value="100" style="width: 100%; margin-bottom: 24px;">
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 8px; color: #ccc;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="toggle-duration" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span>Max Time</span>
+                            </div>
+                            <span id="duration-val" style="color: #00f0ff; font-weight: 700;">2 hrs</span>
+                        </div>
+                        <input type="range" id="range-duration" min="0.5" max="10" step="0.5" value="2" style="width: 100%;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="toolbar-group">
+            <!-- UPDATED MAP TOOLBAR DROPDOWN (Matches Screenshot) -->
+            <div class="toolbar-pill dropdown-container" style="padding-left: 14px; padding-right: 6px; gap: 12px; background: #111113; border: 1px solid rgba(255,255,255,0.05);">
+                <div id="map-pill-name" style="font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9);">Guest Rider</div>
+                <div id="profile-avatar" style="width: 32px; height: 32px; border-radius: 50%; background: #00f0ff; color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px;">G</div>
+                
+                <div class="dropdown-menu" style="right: 0; left: auto; padding: 20px; width: 280px; background: #111113; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+                    <div id="profile-name" style="font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px;">Guest Rider</div>
+                    <div id="profile-tag" style="color: #00f0ff; font-size: 11px; margin-bottom: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;">Preview Mode</div>
+                    <button id="logout-btn" style="width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #aaa; padding: 14px; border-radius: 10px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'; this.style.color='#fff';" onmouseout="this.style.background='transparent'; this.style.color='#aaa';">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+    <div id="location-card"></div>
+
+    <script>
+        window.closeAuthModal = function() {
+            const authModal = document.getElementById('auth-modal');
+            const blurOverlay = document.getElementById('modal-blur-overlay');
+            
+            if (authModal) {
+                authModal.style.opacity = '0';
+                authModal.style.pointerEvents = 'none';
+                setTimeout(() => { authModal.style.display = 'none'; }, 300);
+            }
+            if (blurOverlay) {
+                blurOverlay.style.opacity = '0';
+                blurOverlay.style.pointerEvents = 'none';
+                setTimeout(() => { blurOverlay.style.display = 'none'; }, 300);
+            }
+        };
+
+        window.launchApp = function(category = null) {
+            const gateway = document.getElementById('marga-gateway');
+            const gatewayInput = document.getElementById('gateway-search');
+            
+            if (category === 'join') {
+                const authModal = document.getElementById('auth-modal');
+                const blurOverlay = document.getElementById('modal-blur-overlay');
+                
+                if (blurOverlay) {
+                    blurOverlay.style.display = 'block';
+                    blurOverlay.style.pointerEvents = 'auto';
+                    setTimeout(() => { blurOverlay.style.opacity = '1'; }, 10);
+                }
+                if (authModal) {
+                    authModal.style.display = 'flex'; 
+                    setTimeout(() => {
+                        authModal.style.opacity = '1';
+                        authModal.style.visibility = 'visible';
+                        authModal.style.pointerEvents = 'auto';
+                    }, 10);
+                }
+                return; 
+            }
+
+            // Grab the search term either from the category click (e.g. "Ghats") OR the input field
+            let searchTerm = (typeof category === 'string' && category !== 'join') ? category : null;
+            if (!searchTerm && gatewayInput && gatewayInput.value.trim() !== '') {
+                searchTerm = gatewayInput.value.trim();
+            }
+
+            document.body.classList.remove('gateway-active');
+            if (gateway) {
+                gateway.style.opacity = '0';
+                gateway.style.pointerEvents = 'none'; 
+                setTimeout(() => { gateway.style.display = 'none'; }, 800); 
+            }
+
+            if (searchTerm) {
+                const mainSearchBar = document.getElementById('search-bar');
+                if (mainSearchBar) {
+                    mainSearchBar.value = searchTerm;
+                    mainSearchBar.dispatchEvent(new Event('input', { bubbles: true }));
+                    setTimeout(() => {
+                        const searchBtn = document.getElementById('search-btn');
+                        if (searchBtn) searchBtn.click();
+                    }, 50);
+                }
+            } else {
+                setTimeout(() => {
+                    const mainSearchBar = document.getElementById('search-bar');
+                    if (mainSearchBar) mainSearchBar.focus();
+                }, 800);
+            }
+        };
+    </script>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.8.0/suncalc.min.js"></script>
+    
+    <!-- FORCED CACHE BUST TO ENSURE NEW LOGIC LOADS -->
+    <script type="module" src="app.js?v=13.0"></script>
+</body>
+</html>

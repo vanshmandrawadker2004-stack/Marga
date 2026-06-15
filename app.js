@@ -197,7 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const displayName = user.displayName || user.email.split('@')[0];
             const initial = (user.displayName || user.email)[0].toUpperCase();
             
-            // Map UI Avatar
+            // Map UI Avatar Sync
+            const mapPillName = document.getElementById('map-pill-name');
+            if (mapPillName) mapPillName.innerText = displayName;
             document.getElementById('profile-name').innerText = displayName;
             document.getElementById('profile-avatar').innerText = initial;
             document.getElementById('profile-tag').innerText = `${data.bikeModel} | ${data.skillLevel}`;
@@ -240,6 +242,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (qStep) { qStep.classList.remove('active-view'); qStep.style.display = 'none'; qStep.style.opacity = '0'; }
             if (loginStep) { loginStep.classList.add('active-view'); loginStep.style.display = 'block'; loginStep.style.opacity = '1'; }
             
+            const mapPillName = document.getElementById('map-pill-name');
+            if (mapPillName) mapPillName.innerText = "Guest Rider";
             const profileName = document.getElementById('profile-name');
             if (profileName) profileName.innerText = "Guest Rider";
             const profileAvatar = document.getElementById('profile-avatar');
