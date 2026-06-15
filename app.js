@@ -71,7 +71,6 @@ function updateRecommendedCards(trailsData) {
                     <div class="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div class="relative z-10 flex flex-col h-full">
                         
-                        <!-- Top: Vibe & Title -->
                         <div class="mb-4">
                             <div style="color: #00f0ff; font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;">
                                 ${trail.vibeType || 'Ride'}
@@ -81,14 +80,12 @@ function updateRecommendedCards(trailsData) {
                             </h3>
                         </div>
                         
-                        <!-- Middle: Intel Excerpt -->
                         <div class="flex-grow mb-6">
                             <p style="font-size: 13px; color: #888; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: 400;">
                                 ${excerpt}
                             </p>
                         </div>
                         
-                        <!-- Bottom: Stats -->
                         <div style="display: flex; align-items: center; margin-top: auto;">
                             <div style="flex: 1; padding-right: 16px;">
                                 <div style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; font-weight: 800;">Distance</div>
@@ -121,6 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const qStep = document.getElementById('questionnaire-step');
     const saveProfileBtn = document.getElementById('save-profile-btn');
 
+    let isInitialAuthCheck = true; // FLAG TO PREVENT AUTO-DISMISSAL ON REFRESH
+
     document.querySelectorAll('.chip-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -142,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    async function routeUser(user) {
+    async function routeUser(user, isInitialLoad = false) {
         let userSnap = await getDoc(doc(db, "users", user.uid));
         
         if (!userSnap.exists()) {
@@ -202,7 +201,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (window.closeAuthModal) window.closeAuthModal();
             
-            if (document.body.classList.contains('gateway-active')) {
+            // ONLY DISMISS GATEWAY IF THIS WAS A MANUAL LOGIN, NOT A PAGE REFRESH
+            if (!isInitialLoad && document.body.classList.contains('gateway-active')) {
                 document.body.classList.remove('gateway-active');
                 const gateway = document.getElementById('marga-gateway');
                 if (gateway) {
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            routeUser(user);
+            routeUser(user, isInitialAuthCheck);
         } else {
             document.body.classList.remove('logged-in');
             document.body.classList.remove('menu-open'); 
@@ -250,6 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentMarkers = [];
             if (routingControl) { map.removeLayer(routingControl); routingControl = null; }
         }
+        isInitialAuthCheck = false; // Next time it fires, it will be a manual action
     });
 
     if (logoutBtn) logoutBtn.addEventListener('click', () => signOut(auth));
@@ -275,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         await updateDoc(doc(db, "users", user.uid), { bikeModel: selectedBike, skillLevel: selectedSkill, idealVibes: selectedVibes });
-        routeUser(user);
+        routeUser(user, false);
     });
 
     if (googleBtn) googleBtn.addEventListener('click', async () => {
@@ -297,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         const res = await createUserWithEmailAndPassword(auth, email, pass);
                         await setDoc(doc(db, "users", res.user.uid), { email: res.user.email, authProvider: "email", bikeModel: "Unknown", savedTrails: [], createdAt: new Date() });
-                        routeUser(res.user); 
+                        routeUser(res.user, false); 
                     } catch (err) { alert("Error: " + err.message); }
                 }
             }
