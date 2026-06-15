@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const qStep = document.getElementById('questionnaire-step');
     const saveProfileBtn = document.getElementById('save-profile-btn');
 
-    let isInitialAuthCheck = true; // FLAG TO PREVENT AUTO-DISMISSAL ON REFRESH
+    let isInitialAuthCheck = true; // Prevents gateway closing on page refresh
 
     document.querySelectorAll('.chip-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
@@ -154,7 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // CHECK IF THEY ARE NEW
         if (data.bikeModel === "Unknown" || !data.bikeModel) {
             
-            // Force the modal & blur to stay active
             const authModal = document.getElementById('auth-modal');
             const blurOverlay = document.getElementById('modal-blur-overlay');
             if (blurOverlay) {
@@ -169,7 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 authModal.style.pointerEvents = 'auto';
             }
             
-            // Execute the explicit transition to the questionnaire step
             if (loginStep) loginStep.style.opacity = '0'; 
             
             setTimeout(() => {
@@ -201,8 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (window.closeAuthModal) window.closeAuthModal();
             
-            // ONLY DISMISS GATEWAY IF THIS WAS A MANUAL LOGIN, NOT A PAGE REFRESH
-            if (!isInitialLoad && document.body.classList.contains('gateway-active')) {
+            // Only dismiss the Gateway if this was a manual login
+            if (isInitialLoad === false && document.body.classList.contains('gateway-active')) {
                 document.body.classList.remove('gateway-active');
                 const gateway = document.getElementById('marga-gateway');
                 if (gateway) {
