@@ -84,7 +84,6 @@ async function verifyCoordinates(gem) {
 
         // If both searches fail, reject it.
         if (!resultLng || !resultLat) {
-            // console.log(`    ❌ Mapbox completely blind to: ${gem.locationName}`);
             return null;
         }
             
@@ -162,7 +161,6 @@ async function huntForGems(videoUrl) {
         ${rawText}
         `;
 
-        // --- GEMINI EXTRACTION WITH 503 & 429 RETRY LOGIC ---
         const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
         let result = null;
         let retries = 3;
@@ -172,11 +170,11 @@ async function huntForGems(videoUrl) {
                 result = await model.generateContent(prompt);
                 break; 
             } catch (err) {
-                // Check if it is a 503 (Overloaded) OR a 429 (Rate Limited)
                 if (err.message && (err.message.includes('503') || err.message.includes('429'))) {
                     const errorType = err.message.includes('429') ? '429 Rate Limit' : '503 Overloaded';
-                    console.log(`    ⚠️ Gemini API hit a speed bump (${errorType}). Cooling down for 45 seconds... (${retries - 1} attempts left)`);
-                    await sleep(45000); 
+                    // FIXED: Increased backoff cooldown from 45s to 90s to let token buckets clear out completely
+                    console.log(`    ⚠️ Gemini API hit a speed bump (${errorType}). Cooling down for 90 seconds... (${retries - 1} attempts left)`);
+                    await sleep(90000); 
                     retries--;
                 } else {
                     throw err; 
@@ -186,13 +184,11 @@ async function huntForGems(videoUrl) {
 
         if (!result) throw new Error("Gemini API failed after 3 retries. Wait a few hours for your quota to reset.");
         
-        // 🐛 BUG FIX: We re-added the parsing step that was missing!
         let cleanText = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
         const extractedData = JSON.parse(cleanText);
         
         console.log(`  💎 Gemini found ${extractedData.length} potential locations. Verifying with Mapbox...`);
 
-        // --- THE AUTOMATED FILTER ---
         const verifiedGems = [];
         
         for (let gem of extractedData) {
@@ -222,7 +218,6 @@ async function huntForGems(videoUrl) {
 async function runBatchScraper(urls) {
     console.log(`\n🚀 INITIALIZING EXTRACTION FOR ${urls.length} VIDEOS...\n`);
     
-    // 1. Fetch existing names from Firebase to prevent duplicates efficiently
     let existingNames = [];
     try {
         console.log(`📂 Downloading existing trail registry from Firestore...`);
@@ -242,12 +237,10 @@ async function runBatchScraper(urls) {
         if (newGems.length > 0) {
             let addedCount = 0;
             
-            // 2. THE DEDUPER: Check against our downloaded Firebase list
             for (const gem of newGems) {
                 const isDuplicate = existingNames.includes(gem.locationName.toLowerCase());
 
                 if (!isDuplicate) {
-                    // It's a new location! Add to cloud.
                     const cleanGem = {
                         ...gem,
                         createdAt: admin.firestore.FieldValue.serverTimestamp()
@@ -256,7 +249,7 @@ async function runBatchScraper(urls) {
                     const docId = gem.locationName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
                     
                     await db.collection('trails').doc(docId).set(cleanGem);
-                    existingNames.push(gem.locationName.toLowerCase()); // Update local cache
+                    existingNames.push(gem.locationName.toLowerCase()); 
                     
                     console.log(`    ☁️ Saved to Firestore: "${gem.locationName}"`);
                     addedCount++;
@@ -269,8 +262,9 @@ async function runBatchScraper(urls) {
         }
 
         if (i < urls.length - 1) {
-            console.log(`⏳ Cooling down for 15 seconds to respect Free-Tier limits...`);
-            await sleep(15000); 
+            // FIXED: Increased baseline cooling period from 15 seconds to 65 seconds to completely flush the TPM quota ceiling
+            console.log(`⏳ Cooling down for 65 seconds to completely reset minute-by-minute Token limits...`);
+            await sleep(65000); 
         }
     }
     console.log(`\n🏁 BATCH COMPLETE!`);

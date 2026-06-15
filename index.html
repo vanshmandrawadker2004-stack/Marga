@@ -1,13 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marga</title>
+    <title>Marga - Curated places for every kind of ride.</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffffff",
+                        "background": "#0a0a0c"
+                    },
+                    spacing: {
+                        "container-max": "1600px",
+                        "margin-mobile": "20px",
+                        "margin-desktop": "40px"
+                    },
+                    fontFamily: {
+                        "display-xl": ["Outfit"],
+                        "body-md": ["Outfit"],
+                        "display-xl-mobile": ["Outfit"],
+                        "label-mono": ["JetBrains Mono"],
+                        "body-lg": ["Outfit"],
+                        "headline-lg": ["Outfit"]
+                    }
+                }
+            }
+        }
+    </script>
+
     <link rel="stylesheet" href="style.css">
     
     <style>
+        /* Force Input Placeholders */
+        .widget-input::placeholder {
+            color: #888888 !important;
+            opacity: 1 !important;
+            font-weight: 500 !important;
+        }
+
+        /* MCQ Styles for Auth Modal */
         .mcq-group {
             display: flex;
             flex-wrap: wrap;
@@ -37,35 +81,202 @@
             font-weight: 700;
             box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
         }
+        
+        /* Gateway Specific Styles */
+        .volumetric-spotlight {
+            background: radial-gradient(circle at 30% 20%, rgba(40, 60, 80, 0.15) 0%, rgba(20, 30, 40, 0.05) 40%, rgba(0, 0, 0, 0) 70%);
+            mix-blend-mode: screen;
+        }
+        .glass-panel-search {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(48px) saturate(180%);
+            -webkit-backdrop-filter: blur(48px) saturate(180%);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        .glass-button {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255, 255, 255, 0.15);
+        }
+        .oled-glow {
+            text-shadow: 0 0 40px rgba(255, 255, 255, 0.15);
+        }
+
+        /* --- THE GATEWAY LOCK & UNLOCK --- */
+        body.gateway-active #top-toolbar,
+        body.gateway-active #search-container,
+        body.gateway-active #global-loader {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+        
+        body:not(.gateway-active) #search-container,
+        body:not(.gateway-active) #top-toolbar {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            transition: opacity 0.8s ease-in-out, visibility 0.8s ease-in-out;
+        }
     </style>
 </head>
-<body>
+
+<body class="bg-[#050507] text-white gateway-active">
+
+    <div id="modal-blur-overlay" onclick="window.closeAuthModal()" style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(5,5,7,0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 999990; cursor: pointer; opacity: 0; transition: opacity 0.3s ease;"></div>
+
+    <div id="marga-gateway" class="absolute inset-0 z-[999] text-primary min-h-screen font-body-md antialiased selection:bg-primary/20 selection:text-primary overflow-y-auto transition-all duration-700 ease-in-out" style="pointer-events: auto;">
+        
+        <div class="fixed inset-0 z-[-1] pointer-events-none" 
+             style="background: 
+                linear-gradient(to bottom, transparent 0vh, transparent 30vh, #050507 50vh, #050507 100vh),
+                linear-gradient(to right, #050507 0%, #050507 48%, rgba(5,5,7,0.7) 65%, transparent 100%);">
+        </div>
+
+        <div class="fixed inset-0 volumetric-spotlight pointer-events-none z-0" style="mask-image: linear-gradient(to right, black 0%, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to right, black 0%, black 50%, transparent 100%);"></div>
+        
+        <nav class="fixed top-0 w-full z-50 transition-all duration-300 ease-in-out bg-[#050507]">
+            <div class="flex justify-between items-center h-20 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto border-b border-white/5" style="border-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.05) 50%, transparent 100%) 1;">
+                <div class="flex items-center gap-3">
+                    <span class="font-display-xl text-[22px] font-bold tracking-widest text-primary uppercase opacity-90">Marga</span>
+                </div>
+                
+                <div class="hidden md:flex items-center">
+                    <button type="button" onclick="window.launchApp('join')" class="bg-primary text-[#050507] font-body-md font-medium px-6 py-2 rounded-full hover:bg-white/90 transition-colors shadow-lg cursor-pointer">
+                        Join Club
+                    </button>
+                </div>
+                <button class="md:hidden text-primary opacity-80">
+                    <span class="material-symbols-outlined text-[24px]">menu</span>
+                </button>
+            </div>
+        </nav>
+
+        <main class="relative z-10 pt-[140px] pb-24">
+            <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+                
+                <div class="flex flex-col gap-12 mb-20">
+                    <section class="max-w-[1200px] relative w-full mb-32"> 
+
+                        <div class="mb-6">
+                            <span class="font-label-mono text-primary/40 uppercase tracking-[0.3em] text-[13px]">Discover</span>
+                        </div>
+                        <h1 class="text-5xl md:text-7xl lg:text-[110px] font-display-xl text-primary mb-10 leading-[0.9] tracking-[-0.04em] oled-glow">
+                            Curated places for<br/>every kind of ride.
+                        </h1>
+                        <div class="glass-panel-search rounded-full p-1.5 flex items-center max-w-3xl relative group transition-all duration-500 hover:bg-white/[0.05]"> 
+                            <div class="pl-5 pr-2 text-primary/50 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[20px]">search</span>
+                            </div>
+                            <input id="gateway-search" 
+                                   oninput="document.getElementById('search-bar').value = this.value; document.getElementById('search-bar').dispatchEvent(new Event('input', {bubbles:true}));"
+                                   onkeypress="if(event.key === 'Enter') window.launchApp()" 
+                                   class="bg-transparent border-none text-primary font-body-lg w-full focus:ring-0 placeholder:text-primary/30 h-12 outline-none pr-[60px]" 
+                                   placeholder="Search places or routes..." 
+                                   type="text"/>
+                            <button onclick="window.launchApp()" class="transition-all absolute cursor-pointer rounded-full right-1.5" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 44px !important; height: 44px !important; min-width: 44px !important; min-height: 44px !important; padding: 0 !important; margin: 0 !important; background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; box-shadow: none !important; box-sizing: border-box !important;">
+                                <span class="material-symbols-outlined text-[20px]" style="margin: 0 !important; padding: 0 !important; display: block !important; line-height: 1 !important;">arrow_forward</span>
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="pt-12 relative z-10">
+                        <h2 class="font-label-mono text-primary/40 uppercase tracking-[0.3em] mb-6 text-[14px] font-medium">Categories</h2>
+                        <div class="flex flex-row flex-wrap gap-8 md:gap-14">
+                            <a onclick="window.launchApp('Viewpoints')" class="flex flex-col items-center gap-4 group cursor-pointer w-[72px]">
+                                <div class="flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-1">
+                                    <span class="material-symbols-outlined text-[30px] text-primary/70 font-light group-hover:text-primary transition-colors">landscape</span>
+                                </div>
+                                <span class="font-body-md text-primary/50 text-[13px] group-hover:text-primary transition-colors tracking-wide text-center">Viewpoints</span>
+                            </a>
+                            <a onclick="window.launchApp('Routes')" class="flex flex-col items-center gap-4 group cursor-pointer w-[72px]">
+                                <div class="flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-1">
+                                    <span class="material-symbols-outlined text-[30px] text-primary/70 font-light group-hover:text-primary transition-colors">route</span>
+                                </div>
+                                <span class="font-body-md text-primary/50 text-[13px] group-hover:text-primary transition-colors tracking-wide text-center">Routes</span>
+                            </a>
+                            <a onclick="window.launchApp('Lakes')" class="flex flex-col items-center gap-4 group cursor-pointer w-[72px]">
+                                <div class="flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-1">
+                                    <span class="material-symbols-outlined text-[30px] text-primary/70 font-light group-hover:text-primary transition-colors">water</span>
+                                </div>
+                                <span class="font-body-md text-primary/50 text-[13px] group-hover:text-primary transition-colors tracking-wide text-center">Lakes</span>
+                            </a>
+                            <a onclick="window.launchApp('Dams')" class="flex flex-col items-center gap-4 group cursor-pointer w-[72px]">
+                                <div class="flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-1">
+                                    <span class="material-symbols-outlined text-[30px] text-primary/70 font-light group-hover:text-primary transition-colors">waves</span>
+                                </div>
+                                <span class="font-body-md text-primary/50 text-[13px] group-hover:text-primary transition-colors tracking-wide text-center">Dams</span>
+                            </a>
+                            <a onclick="window.launchApp('Ghats')" class="flex flex-col items-center gap-4 group cursor-pointer w-[72px]">
+                                <div class="flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-1">
+                                    <span class="material-symbols-outlined text-[30px] text-primary/70 font-light group-hover:text-primary transition-colors">terrain</span>
+                                </div>
+                                <span class="font-body-md text-primary/50 text-[13px] group-hover:text-primary transition-colors tracking-wide text-center">Ghats</span>
+                            </a>
+                            <a onclick="window.launchApp('Off-Road')" class="flex flex-col items-center gap-4 group cursor-pointer w-[72px]">
+                                <div class="flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-1">
+                                    <span class="material-symbols-outlined text-[30px] text-primary/70 font-light group-hover:text-primary transition-colors">explore</span>
+                                </div>
+                                <span class="font-body-md text-primary/50 text-[13px] group-hover:text-primary transition-colors tracking-wide text-center">Off-Road</span>
+                            </a>
+                        </div>
+                    </section>
+                </div>
+
+                <section>
+                    <div class="flex justify-between items-end mb-8">
+                        <h2 class="font-label-mono text-primary/40 uppercase tracking-[0.3em] text-[14px] font-medium">Top Rides Near You</h2>
+                    </div>
+                    <div id="recommended-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full xl:w-5/6">
+                        <div class="col-span-3 text-primary/40 text-[13px] italic animate-pulse">Locating the best rides near you...</div>
+                    </div>
+                </section>
+                
+            </div>
+        </main>
+
+        <footer class="w-full py-16 relative z-10 bg-[#050507]">
+            <div class="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto gap-12 border-t border-white/5" style="border-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.05) 50%, transparent 100%) 1;">
+                <div class="flex flex-col md:flex-row items-center gap-4 md:gap-8 pt-8">
+                    <span class="font-display-xl-mobile md:font-display-xl text-[20px] text-primary/80 uppercase tracking-widest font-bold">Marga</span>
+                    <span class="font-label-mono text-primary/30 text-[10px] uppercase text-center md:text-left tracking-widest">
+                        © 2026 MARGA MOTORCYCLE DISCOVERY. ALL RIGHTS RESERVED.
+                    </span>
+                </div>
+            </div>
+        </footer>
+    </div>
 
     <div id="global-loader">
         <div class="radar-loader"></div>
         <div class="loader-text">Locating Hidden Gems...</div>
     </div>
 
-    <div id="auth-modal" class="glass-panel">
+    <div id="auth-modal" class="glass-panel" onclick="if(event.target === this) window.closeAuthModal()" style="display: none; z-index: 999999 !important;">
         
-        <div id="login-step" class="auth-view active-view">
+        <div id="login-step" class="auth-view active-view" style="display: block; opacity: 1; transition: opacity 0.3s ease;">
             <h2 class="widget-title">Marga</h2>
-            <p class="widget-subtitle">Unlock premium riding trails</p>
+            <p class="widget-subtitle" style="margin-bottom: 32px;">Unlock premium riding trails</p>
 
-            <input id="login-email" type="email" placeholder="Rider Email" class="widget-input">
-            <input id="login-pass" type="password" placeholder="Password" class="widget-input">
+            <input id="login-email" type="email" placeholder="Rider Email" class="widget-input" style="background: rgba(255,255,255,0.05) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.1) !important; padding: 16px !important; border-radius: 12px !important; width: 100% !important; margin-bottom: 12px !important; box-sizing: border-box !important;">
             
-            <div class="forgot-pass-container">
-                <a href="#" class="forgot-pass-link">Forgot password?</a>
-            </div>
-            
-            <button id="login-submit-btn" class="widget-btn">Continue</button>
-            
-            <div class="divider">
-                <span>or</span>
+            <input id="login-pass" type="password" placeholder="Password" class="widget-input" style="background: rgba(255,255,255,0.05) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.1) !important; padding: 16px !important; border-radius: 12px !important; width: 100% !important; margin-bottom: 8px !important; box-sizing: border-box !important;">
+
+            <div class="forgot-pass-container" style="text-align: right; margin-bottom: 24px;">
+                <a href="#" class="forgot-pass-link" style="color: #888; font-size: 12px; text-decoration: none;">Forgot password?</a>
             </div>
 
-            <button id="google-login-btn" class="google-btn">
+            <button id="login-submit-btn" class="widget-btn" style="width: 100%; background: #ffffff; color: #000000; font-weight: 800; padding: 16px; border-radius: 12px; border: none; cursor: pointer; font-size: 16px; margin-bottom: 24px;">Continue</button>
+
+            <div class="divider" style="display: flex; align-items: center; margin-bottom: 24px; color: #555; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">
+                <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+                <span style="padding: 0 12px;">or</span>
+                <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+            </div>
+
+            <button id="google-login-btn" class="google-btn" style="width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 12px; transition: background 0.2s;">
                 <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -74,17 +285,19 @@
                 </svg>
                 Continue with Google
             </button>
-            
-            <button id="guest-btn" style="width: 100%; background: transparent; border: 1px solid rgba(255, 255, 255, 0.2); color: #aaa; padding: 12px; border-radius: 8px; font-size: 15px; font-family: inherit; font-weight: 600; cursor: pointer; margin-top: 12px; margin-bottom: 16px; transition: background 0.2s, color 0.2s;">Preview as Guest</button>
-            
-            <p class="widget-footer">New rider? <a href="#">Create an account</a></p>
 
-            <div class="legal-disclaimer" style="margin-top: 24px; padding: 16px 12px 4px 12px; font-size: 11px; color: #777; text-align: center; line-height: 1.5; border-top: 1px solid rgba(255,255,255,0.05);">
-                <strong>Important Disclaimer:</strong> Marga is an experimental beta tool that algorithmically aggregates public trail and route data. Motorcycling and off-roading are inherently dangerous activities. By using this app, you acknowledge that you assume 100% of the physical, financial, and legal risks. Marga does not guarantee road conditions or route legality. Always obey local laws, respect private property, and ride within your limits.
+            <button id="guest-btn" style="width: 100%; background: transparent; border: 1px solid rgba(255, 255, 255, 0.1); color: #aaa; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 24px; transition: background 0.2s, color 0.2s;">Preview as Guest</button>
+
+            <p class="widget-footer" style="text-align: center; color: #888; font-size: 14px; margin-bottom: 24px;">
+                New rider? <a href="#" onclick="document.getElementById('login-submit-btn').innerText = 'Sign Up'; document.getElementById('login-email').focus(); return false;" style="color: #fff; font-weight: 700; text-decoration: none;">Create an account</a>
+            </p>
+
+            <div class="legal-disclaimer" style="padding-top: 16px; font-size: 11px; color: #666; text-align: center; line-height: 1.5; border-top: 1px solid rgba(255,255,255,0.05);">
+                <strong>Important Disclaimer:</strong> Marga is an experimental beta tool that algorithmically aggregates public trail and route data.
             </div>
         </div>
 
-        <div id="questionnaire-step" class="auth-view">
+        <div id="questionnaire-step" class="auth-view" style="display: none; opacity: 0; transition: opacity 0.3s ease;">
             <h2 style="color: #fff; margin: 0 0 8px 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">Rider Profile</h2>
             <p style="color: #888; font-size: 15px; margin: 0 0 32px 0;">Tailor your Marga experience.</p>
 
@@ -114,30 +327,37 @@
 
             <button id="save-profile-btn" style="width: 100%; background: #00f0ff; color: #000; padding: 18px; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 15px; margin-top: 8px; transition: transform 0.2s, box-shadow 0.2s;">Start Riding</button>
         </div>
-
     </div>
-    <div class="hero-overlay">
-        <div class="hero-brand">
-            <h1 class="hero-title">Marga</h1>
-            <p class="hero-subtitle">Uncover hidden gems.</p>
-            <p class="hero-social-proof">500+ unique trails</p>
+
+    <div class="search-container w-full max-w-[650px] mx-auto px-4" id="search-container">
+        
+        <div class="quick-search-chips w-full flex overflow-x-auto pb-2" id="quick-search-chips" style="scrollbar-width: none;">
+            <button class="chip-btn" data-query="ghat">Ghats</button>
+            <button class="chip-btn" data-query="coast">Coastal</button>
+            <button class="chip-btn" data-query="sunrise">Sunrise</button>
+            <button class="chip-btn" data-query="forest">Forest</button>
+            <button class="chip-btn" data-query="offroad">Off-Road</button>
+            <div style="min-width: 8px; flex-shrink: 0;"></div>
         </div>
-    </div>
 
-    <div class="search-container" id="search-container">
-        <div class="search-pill">
-            <input type="text" id="search-bar" placeholder="Try '2 hour ride' or 'waterfall'...">
-            <button id="search-btn">➤</button>
+        <div class="glass-panel-search rounded-full p-1.5 flex items-center w-full relative group transition-all duration-500 hover:bg-white/[0.05]" style="background: rgba(10, 10, 12, 0.7); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.1);">
+            <div class="pl-4 pr-2 text-primary/50 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px]">search</span>
+            </div>
+            <input type="text" id="search-bar" class="bg-transparent border-none text-primary font-body-lg w-full focus:ring-0 placeholder:text-primary/30 h-12 outline-none text-[15px] pr-[60px]" placeholder="Try '2 hour ride' or 'waterfall'...">
+            
+            <button id="search-btn" class="transition-all absolute cursor-pointer rounded-full right-1.5" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 44px !important; height: 44px !important; min-width: 44px !important; min-height: 44px !important; padding: 0 !important; margin: 0 !important; background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; box-shadow: none !important; box-sizing: border-box !important;">
+                <span class="material-symbols-outlined text-[20px]" style="margin: 0 !important; padding: 0 !important; display: block !important; line-height: 1 !important;">arrow_forward</span>
+            </button>
         </div>
     </div>
 
     <div id="top-toolbar">
-        
         <div class="toolbar-group">
             <div class="toolbar-pill">
                 <label class="icon-toggle" title="Petrol Pumps">
                     <input type="checkbox" id="toggle-petrol" class="utility-toggle" data-query="petrol pump" style="display:none;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="15" y2="22"></line><line x1="4" y1="9" x2="14" y2="9"></line><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"></path><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"></path></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="15" y2="22"></line><line x1="4" y1="9" x2="14" y2="9"></line><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"></path><path d="M14 13h2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"></path></svg>
                 </label>
                 <div class="divider-vertical"></div>
                 <label class="icon-toggle" title="Restaurants & Cafes">
@@ -154,7 +374,6 @@
 
         <div class="toolbar-group">
             <div class="toolbar-pill">
-                
                 <div class="dropdown-container">
                     <div class="icon-btn">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
@@ -177,15 +396,14 @@
                 </div>
 
                 <div class="divider-vertical"></div>
-                
+
                 <div class="dropdown-container">
                     <div class="icon-btn">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
                         <span style="font-size: 13px; font-weight: 600; margin-left: 6px;">Filters</span>
                     </div>
-                    
+
                     <div class="dropdown-menu" style="width: 240px; right: 0; left: auto;">
-                        
                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 8px; color: #ccc;">
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <label class="toggle-switch">
@@ -197,7 +415,7 @@
                             <span id="distance-val" style="color: #00f0ff; font-weight: 700;">100 km</span>
                         </div>
                         <input type="range" id="range-distance" min="10" max="200" value="100" style="width: 100%; margin-bottom: 24px;">
-                        
+
                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 8px; color: #ccc;">
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <label class="toggle-switch">
@@ -209,13 +427,11 @@
                             <span id="duration-val" style="color: #00f0ff; font-weight: 700;">2 hrs</span>
                         </div>
                         <input type="range" id="range-duration" min="0.5" max="10" step="0.5" value="2" style="width: 100%;">
-                        
                     </div>
                 </div>
-
             </div>
         </div>
-        
+
         <div class="toolbar-group">
             <div class="toolbar-pill dropdown-container">
                 <div id="profile-avatar" class="avatar-circle">G</div>
@@ -226,16 +442,89 @@
                 </div>
             </div>
         </div>
-        
     </div>
+
     <div id="map"></div>
     <div id="location-card"></div>
 
+    <script>
+        window.closeAuthModal = function() {
+            const authModal = document.getElementById('auth-modal');
+            const blurOverlay = document.getElementById('modal-blur-overlay');
+            
+            if (authModal) {
+                authModal.style.opacity = '0';
+                authModal.style.pointerEvents = 'none';
+                setTimeout(() => { authModal.style.display = 'none'; }, 300);
+            }
+            if (blurOverlay) {
+                blurOverlay.style.opacity = '0';
+                blurOverlay.style.pointerEvents = 'none';
+                setTimeout(() => { blurOverlay.style.display = 'none'; }, 300);
+            }
+        };
+
+        window.launchApp = function(category = null) {
+            const gateway = document.getElementById('marga-gateway');
+            const gatewayInput = document.getElementById('gateway-search');
+            
+            if (category === 'join') {
+                const authModal = document.getElementById('auth-modal');
+                const blurOverlay = document.getElementById('modal-blur-overlay');
+                
+                if (blurOverlay) {
+                    blurOverlay.style.display = 'block';
+                    blurOverlay.style.pointerEvents = 'auto';
+                    setTimeout(() => { blurOverlay.style.opacity = '1'; }, 10);
+                }
+                if (authModal) {
+                    authModal.style.display = 'flex'; 
+                    setTimeout(() => {
+                        authModal.style.opacity = '1';
+                        authModal.style.visibility = 'visible';
+                        authModal.style.pointerEvents = 'auto';
+                    }, 10);
+                }
+                return; 
+            }
+
+            // Grab the search term either from the category click (e.g. "Ghats") OR the input field
+            let searchTerm = (typeof category === 'string' && category !== 'join') ? category : null;
+            if (!searchTerm && gatewayInput && gatewayInput.value.trim() !== '') {
+                searchTerm = gatewayInput.value.trim();
+            }
+
+            document.body.classList.remove('gateway-active');
+            if (gateway) {
+                gateway.style.opacity = '0';
+                gateway.style.pointerEvents = 'none'; 
+                setTimeout(() => { gateway.style.display = 'none'; }, 800); 
+            }
+
+            if (searchTerm) {
+                const mainSearchBar = document.getElementById('search-bar');
+                if (mainSearchBar) {
+                    mainSearchBar.value = searchTerm;
+                    mainSearchBar.dispatchEvent(new Event('input', { bubbles: true }));
+                    setTimeout(() => {
+                        const searchBtn = document.getElementById('search-btn');
+                        if (searchBtn) searchBtn.click();
+                    }, 50);
+                }
+            } else {
+                // Even if empty, focus the main search bar
+                setTimeout(() => {
+                    const mainSearchBar = document.getElementById('search-bar');
+                    if (mainSearchBar) mainSearchBar.focus();
+                }, 800);
+            }
+        };
+    </script>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.8.0/suncalc.min.js"></script>
     
-    <script type="module" src="app.js?v=1.5"></script>
+    <script type="module" src="app.js?v=9.0"></script>
 </body>
 </html>

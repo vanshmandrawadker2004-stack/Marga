@@ -767,3 +767,122 @@ body.logged-in #auth-modal {
 
 #login-step { width: 340px; }
 #questionnaire-step { width: 420px; }
+
+/* --- QUICK SEARCH CHIPS --- */
+.quick-search-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+    padding-left: 8px; /* Dialed this down from 16px to shift it left */
+    scrollbar-width: none; 
+    -ms-overflow-style: none; 
+    -webkit-overflow-scrolling: touch; 
+}
+
+.quick-search-chips::-webkit-scrollbar { 
+    display: none; 
+}
+
+.chip-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #a0a0a5;
+    padding: 6px 14px; /* Reduced padding */
+    border-radius: 20px; /* Tighter curve */
+    font-size: 10px; /* Smaller, cleaner text */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0; /* Prevents chips from squishing */
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.chip-btn:hover, .chip-btn:active {
+    background: rgba(0, 240, 255, 0.1);
+    border-color: #00f0ff;
+    color: #00f0ff;
+    transform: scale(0.95);
+}
+
+/* --- SEARCH BAR (Perfectly Even Gaps) --- */
+.search-pill {
+    display: flex;
+    align-items: center;
+    background: rgba(15, 15, 15, 0.9); /* Adjust to your specific dark color */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50px;
+    /* This padding is the secret: 6px top, 6px right, 6px bottom, 20px left */
+    padding: 6px 6px 6px 20px; 
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+#search-btn {
+    width: 38px; /* Fixed width/height guarantees a perfect circle */
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    margin: 0; /* Strip away any accidental margins causing unevenness */
+    background: #00f0ff;
+    color: #000;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+#search-bar {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    padding-right: 12px;
+}
+
+/* --- MARGA LANDING PAGE STYLES --- */
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Background textures */
+.bg-topographic {
+    background-image: url("https://www.transparenttextures.com/patterns/topography.png");
+    background-size: 400px 400px;
+}
+.volumetric-spotlight {
+    background: radial-gradient(circle at 30% 20%, rgba(40, 60, 80, 0.15) 0%, rgba(20, 30, 40, 0.05) 40%, rgba(0, 0, 0, 0) 70%);
+    mix-blend-mode: screen;
+}
+
+/* Glass Materials */
+.glass-panel-search {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(48px) saturate(180%);
+    -webkit-backdrop-filter: blur(48px) saturate(180%);
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+.glass-button {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 0.5px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Image masks and glow */
+.oled-glow { text-shadow: 0 0 40px rgba(255, 255, 255, 0.15); }
+.feathered-card {
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+.image-gradient-overlay {
+    background: linear-gradient(to top, rgba(5,5,7,1) 0%, rgba(5,5,7,0.6) 50%, rgba(5,5,7,0) 100%);
+}

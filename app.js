@@ -35,6 +35,79 @@ let userMarker = null;
 let currentRiderProfile = null; 
 let favoritedLocations = new Set(); 
 
+// --- DYNAMIC SMART CARDS FUNCTION ---
+function updateRecommendedCards(trailsData) {
+    const container = document.getElementById('recommended-container');
+    if (!container) return;
+
+    const sortedTrails = trailsData
+        .filter(t => t.latitude && t.longitude)
+        .map(t => {
+            const dist = map.distance([userLat, userLng], [t.latitude, t.longitude]) / 1000;
+            return { ...t, distance: dist, time: Math.round(dist * 1.5) }; 
+        })
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 3); 
+
+    if (sortedTrails.length === 0) {
+        container.innerHTML = `<div class="col-span-3 text-primary/30 text-[13px] italic">No local trails found nearby. Try searching globally!</div>`;
+        return;
+    }
+
+    container.innerHTML = sortedTrails.map(trail => {
+        let safeLocName = trail.locationName.replace(/'/g, "\\'"); 
+
+        let timeString = '';
+        const h = Math.floor(trail.time / 60);
+        const m = trail.time % 60;
+        if(h > 0) timeString += `${h}h `;
+        timeString += `${m}m`;
+        
+        let excerpt = trail.description ? trail.description : 'Scenic route with great views. Perfect for a quick escape from the city.';
+
+        return `
+            <a onclick="window.launchApp('${safeLocName}')" class="group relative block cursor-pointer h-full">
+                <div class="h-full w-full overflow-hidden rounded-2xl bg-[#0a0a0c] border border-white/5 flex flex-col p-6 relative transition-all duration-300 hover:border-[#00f0ff]/30" style="min-height: 240px;">
+                    <div class="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div class="relative z-10 flex flex-col h-full">
+                        
+                        <!-- Top: Vibe & Title -->
+                        <div class="mb-4">
+                            <div style="color: #00f0ff; font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;">
+                                ${trail.vibeType || 'Ride'}
+                            </div>
+                            <h3 style="font-size: 24px; margin: 0; line-height: 1.1; font-weight: 800; letter-spacing: -1px; color: #ffffff;">
+                                ${trail.locationName}
+                            </h3>
+                        </div>
+                        
+                        <!-- Middle: Intel Excerpt -->
+                        <div class="flex-grow mb-6">
+                            <p style="font-size: 13px; color: #888; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: 400;">
+                                ${excerpt}
+                            </p>
+                        </div>
+                        
+                        <!-- Bottom: Stats -->
+                        <div style="display: flex; align-items: center; margin-top: auto;">
+                            <div style="flex: 1; padding-right: 16px;">
+                                <div style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; font-weight: 800;">Distance</div>
+                                <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff;">${trail.distance.toFixed(1)} km</div>
+                            </div>
+                            <div style="width: 1px; height: 32px; background: rgba(255, 255, 255, 0.08);"></div>
+                            <div style="flex: 1; padding-left: 20px;">
+                                <div style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; font-weight: 800;">Duration</div>
+                                <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff;">${timeString}</div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </a>
+        `;
+    }).join('');
+}
+
 // --- LOGIN & AUTH LOGIC ---
 document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('login-submit-btn');
@@ -44,13 +117,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const guestBtn = document.getElementById('guest-btn');
     const logoutBtn = document.getElementById('logout-btn');
     
-    const authModal = document.getElementById('auth-modal');
     const loginStep = document.getElementById('login-step');
     const qStep = document.getElementById('questionnaire-step');
     const saveProfileBtn = document.getElementById('save-profile-btn');
-    const heroOverlay = document.querySelector('.hero-overlay');
 
-    // WIRING UP THE NEW QUICK SEARCH CHIPS
     document.querySelectorAll('.chip-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -81,27 +151,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const data = userSnap.data();
+        
+        // CHECK IF THEY ARE NEW
         if (data.bikeModel === "Unknown" || !data.bikeModel) {
+            
+            // Force the modal & blur to stay active
+            const authModal = document.getElementById('auth-modal');
+            const blurOverlay = document.getElementById('modal-blur-overlay');
+            if (blurOverlay) {
+                blurOverlay.style.display = 'block';
+                blurOverlay.style.pointerEvents = 'auto';
+                setTimeout(() => { blurOverlay.style.opacity = '1'; }, 10);
+            }
             if (authModal) {
-                authModal.style.display = 'block';
+                authModal.style.display = 'flex';
+                authModal.style.opacity = '1';
+                authModal.style.visibility = 'visible';
                 authModal.style.pointerEvents = 'auto';
             }
+            
+            // Execute the explicit transition to the questionnaire step
             if (loginStep) loginStep.style.opacity = '0'; 
             
-            if (typeof loginCard !== 'undefined' && loginCard) {
-                loginCard.style.opacity = '0';
-            }
-            
             setTimeout(() => {
-                if (loginStep) loginStep.classList.remove('active-view');
-                if (qStep) qStep.classList.add('active-view'); 
-                
+                if (loginStep) {
+                    loginStep.classList.remove('active-view');
+                    loginStep.style.display = 'none';
+                }
+                if (qStep) {
+                    qStep.classList.add('active-view'); 
+                    qStep.style.display = 'block';
+                }
                 setTimeout(() => { if (qStep) qStep.style.opacity = '1'; }, 50);
             }, 300);
 
-            if (heroOverlay) heroOverlay.style.display = 'none';
-
         } else {
+            // THEY ARE AN EXISTING USER
             currentRiderProfile = data;
             favoritedLocations.clear();
             if (data.savedTrails && data.savedTrails.length > 0) {
@@ -114,36 +199,42 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('profile-tag').innerText = `${data.bikeModel} | ${data.skillLevel}`;
             
             document.body.classList.add('logged-in'); 
-            if (authModal) {
-                authModal.style.opacity = '0';
-                authModal.style.pointerEvents = 'none';
-                setTimeout(() => authModal.style.display = 'none', 500); 
-            }
-            if (heroOverlay) heroOverlay.style.display = 'none';
             
+            if (window.closeAuthModal) window.closeAuthModal();
+            
+            if (document.body.classList.contains('gateway-active')) {
+                document.body.classList.remove('gateway-active');
+                const gateway = document.getElementById('marga-gateway');
+                if (gateway) {
+                    gateway.style.opacity = '0';
+                    gateway.style.pointerEvents = 'none';
+                    setTimeout(() => { gateway.style.display = 'none'; }, 800);
+                }
+            }
+
             executeSearch();
         }
     }
 
     onAuthStateChanged(auth, (user) => {
-        if (user) routeUser(user);
-        else {
+        if (user) {
+            routeUser(user);
+        } else {
             document.body.classList.remove('logged-in');
             document.body.classList.remove('menu-open'); 
             document.body.classList.remove('card-open'); 
             
-            if (authModal) {
-                authModal.style.display = 'block';
-                setTimeout(() => {
-                    authModal.style.opacity = '1';
-                    authModal.style.pointerEvents = 'auto';
-                }, 10);
-            }
+            if (window.closeAuthModal) window.closeAuthModal();
             
-            if (qStep) { qStep.classList.remove('active-view'); qStep.style.opacity = '0'; }
-            if (loginStep) { loginStep.classList.add('active-view'); loginStep.style.opacity = '1'; }
-
-            if (heroOverlay) heroOverlay.style.display = 'flex';
+            if (qStep) { qStep.classList.remove('active-view'); qStep.style.display = 'none'; qStep.style.opacity = '0'; }
+            if (loginStep) { loginStep.classList.add('active-view'); loginStep.style.display = 'block'; loginStep.style.opacity = '1'; }
+            
+            const profileName = document.getElementById('profile-name');
+            if (profileName) profileName.innerText = "Guest Rider";
+            const profileAvatar = document.getElementById('profile-avatar');
+            if (profileAvatar) profileAvatar.innerText = "G";
+            const profileTag = document.getElementById('profile-tag');
+            if (profileTag) profileTag.innerText = "Preview Mode";
             
             const locCard = document.getElementById('location-card');
             if (locCard) locCard.style.display = 'none';
@@ -170,10 +261,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedVibes = Array.from(document.querySelectorAll('#vibe-group .mcq-option.selected')).map(el => el.getAttribute('data-value'));
         
         document.body.classList.add('logged-in'); 
-        if (authModal) {
-            authModal.style.opacity = '0';
-            authModal.style.pointerEvents = 'none';
-            setTimeout(() => authModal.style.display = 'none', 500); 
+        
+        if (window.closeAuthModal) window.closeAuthModal();
+
+        if (document.body.classList.contains('gateway-active')) {
+            document.body.classList.remove('gateway-active');
+            const gateway = document.getElementById('marga-gateway');
+            if (gateway) {
+                gateway.style.opacity = '0';
+                gateway.style.pointerEvents = 'none';
+                setTimeout(() => { gateway.style.display = 'none'; }, 800);
+            }
         }
         
         await updateDoc(doc(db, "users", user.uid), { bikeModel: selectedBike, skillLevel: selectedSkill, idealVibes: selectedVibes });
@@ -211,32 +309,45 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             document.body.classList.add('logged-in');
             
-            if (authModal) {
-                authModal.style.opacity = '0';
-                authModal.style.pointerEvents = 'none';
-                setTimeout(() => authModal.style.display = 'none', 500); 
+            if (window.closeAuthModal) window.closeAuthModal();
+
+            if (document.body.classList.contains('gateway-active')) {
+                document.body.classList.remove('gateway-active');
+                const gateway = document.getElementById('marga-gateway');
+                if (gateway) {
+                    gateway.style.opacity = '0';
+                    gateway.style.pointerEvents = 'none';
+                    setTimeout(() => { gateway.style.display = 'none'; }, 800);
+                }
             }
-            if (heroOverlay) heroOverlay.style.display = 'none';
-            
-            document.getElementById('profile-name').innerText = "Guest Rider";
-            document.getElementById('profile-avatar').innerText = "G";
-            document.getElementById('profile-tag').innerText = "Preview Mode";
             
             executeSearch(); 
         });
     }
 });
 
-// --- GPS ---
+// --- GPS & FETCH FOR SMART CARDS ---
 if ("geolocation" in navigator) {
     navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
             userLat = position.coords.latitude;
             userLng = position.coords.longitude;
             const gpsIcon = L.divIcon({ className: 'user-location-marker', iconSize: [12, 12], iconAnchor: [6, 6] });
             userMarker = L.marker([userLat, userLng], { icon: gpsIcon, zIndexOffset: 1000 }).addTo(map);
+
+            try {
+                const snapshot = await getDocs(collection(db, "trails"));
+                const trailsData = snapshot.docs.map(doc => doc.data());
+                updateRecommendedCards(trailsData);
+            } catch (err) {
+                console.error("Failed to load trails for Smart Cards:", err);
+            }
         },
-        (error) => { console.warn("Geolocation denied."); },
+        (error) => { 
+            console.warn("Geolocation denied."); 
+            const container = document.getElementById('recommended-container');
+            if (container) container.innerHTML = `<div class="col-span-3 text-primary/30 text-[13px] italic">Enable location services to see local top rides.</div>`;
+        },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
 }
@@ -263,11 +374,19 @@ function parseConversationalQuery(rawQuery) {
     if (minMatch) cleanText = cleanText.replace(minMatch[0], '');
     if (kmMatch) cleanText = cleanText.replace(kmMatch[0], '');
 
-    // Added 'pradesh', 'nadu', 'state' and others to filler words
-    const fillerWords = ['pradesh','nadu','state','rides','ride','trail','trails','place','places','i','want','to','go','for','a','show','me','some','near','around','the','is','are','in','on','at','with','under','less','than','away','from','here','find','search','within','max','that','take','takes','it','will','which','have','has','can','you','my','give','we','do','any','would','love','looking','out','there','hours','hour','hrs','hr','h','minutes','minute','mins','min','m','kms','km','kilometers','kilometer','of'];
+    const fillerWords = ['pradesh','nadu','state','rides','ride','place','places','i','want','to','go','for','a','show','me','some','near','around','the','is','are','in','on','at','with','under','less','than','away','from','here','find','search','within','max','that','take','takes','it','will','which','have','has','can','you','my','give','we','do','any','would','love','looking','out','there','hours','hour','hrs','hr','h','minutes','minute','mins','min','m','kms','km','kilometers','kilometer','of'];
     
     cleanText.split(/\s+/).forEach(word => {
-        const cleanWord = word.replace(/[^a-z0-9]/g, ''); 
+        let cleanWord = word.replace(/[^a-z0-9]/g, ''); 
+        
+        if(cleanWord === 'lakes') cleanWord = 'lake';
+        if(cleanWord === 'dams') cleanWord = 'dam';
+        if(cleanWord === 'viewpoints') cleanWord = 'viewpoint';
+        if(cleanWord === 'routes') cleanWord = 'route';
+        if(cleanWord === 'valleys') cleanWord = 'valley';
+        if(cleanWord === 'ghats') cleanWord = 'ghat';
+        if(cleanWord === 'trails') cleanWord = 'trail';
+
         if (cleanWord && !fillerWords.includes(cleanWord) && isNaN(cleanWord)) searchKeywords.push(cleanWord);
     });
 
@@ -309,17 +428,14 @@ function executeSearch() {
     getDocs(collection(db, "trails")).then(snapshot => {
         const data = snapshot.docs.map(doc => doc.data());
 
-        const featureWords = ['ghat', 'ghats', 'coast', 'coastal', 'sunrise', 'sunset', 'forest', 'jungle', 'offroad', 'dirt', 'mountain', 'lake', 'waterfall', 'viewpoint', 'highway', 'chill', 'twisties', 'adventure', 'scenic', 'corners'];
+        const featureWords = ['ghat', 'coast', 'sunrise', 'sunset', 'forest', 'jungle', 'offroad', 'dirt', 'mountain', 'lake', 'waterfall', 'viewpoint', 'highway', 'chill', 'twisties', 'adventure', 'scenic', 'corners', 'dam', 'valley', 'route', 'trail'];
         const locationKeywords = smartQuery.searchKeywords.filter(kw => !featureWords.includes(kw));
 
-        // 2. Master State-to-City Alias Mapping
         const aliasMap = {
             'bangalore': ['chikkaballapur', 'tumkur', 'magadi', 'hosur', 'anekal', 'doddaballapura', 'ramanagara', 'kanakapura', 'kalavara', 'bengaluru'],
             'bengaluru': ['chikkaballapur', 'tumkur', 'magadi', 'hosur', 'anekal', 'doddaballapura', 'ramanagara', 'kanakapura', 'kalavara', 'bangalore'],
             'pune': ['lonavala', 'bhor', 'satara', 'mahabaleshwar', 'pune', 'kalyan'],
             'mumbai': ['kalyan', 'igatpuri', 'mumbai', 'thane', 'lonavala'],
-            
-            // State Level Routing
             'maharashtra': ['pune', 'kalyan', 'lonavala', 'satara', 'chiplun', 'shrivardhan', 'sawantwadi', 'igatpuri', 'bhor', 'ratnagiri', 'amravati', 'aurangabad', 'mahabaleshwar', 'samrad', 'mumbai', 'thane'],
             'karnataka': ['chikkaballapur', 'tumkur', 'magadi', 'hosur', 'anekal', 'doddaballapura', 'ramanagara', 'kanakapura', 'kalavara', 'bengaluru', 'bangalore', 'mudigere', 'udupi', 'sakleshpur', 'chikmagalur', 'kalasa', 'gundlupet', 'chamarajanagar', 'kundapura', 'kollur', 'sagara', 'dandeli', 'kumta', 'gokarna', 'hospet', 'madikeri', 'karwar'],
             'tamil': ['salem', 'pollachi', 'ooty', 'chennai', 'rameswaram', 'theni', 'palani', 'tirunelveli', 'coonoor', 'vaniyambadi', 'jolarpettai', 'chidambaram', 'dindigul', 'kodaikanal', 'devadanapatti', 'tenkasi', 'nagercoil'],
@@ -351,9 +467,8 @@ function executeSearch() {
             let isMatch = true;
             if (!gem.latitude || !gem.longitude) return false;
             
-            // UPGRADE: Regex Word Boundary Match instead of .includes()
             const isExplicitTargetSearch = expandedLocKeywords.some(kw => {
-                const regex = new RegExp(`\\b${kw}\\b`, 'i'); // \b ensures exact word match
+                const regex = new RegExp(`\\b${kw}\\b`, 'i'); 
                 return (gem.anchorCity && regex.test(gem.anchorCity)) ||
                        (gem.locationName && regex.test(gem.locationName)) ||
                        (gem.description && regex.test(gem.description));
@@ -419,7 +534,7 @@ function executeSearch() {
                 const scoringKeywords = [...smartQuery.searchKeywords, ...expandedLocKeywords];
                 
                 scoringKeywords.forEach(kw => {
-                    const regex = new RegExp(`\\b${kw}\\b`, 'i'); // Word boundary upgrade here too
+                    const regex = new RegExp(`\\b${kw}\\b`, 'i'); 
                     
                     if (gem.locationName && regex.test(gem.locationName)) personalScore += 10;
                     else if (gem.anchorCity && regex.test(gem.anchorCity)) personalScore += 10; 
@@ -644,11 +759,21 @@ function showLocationCard(gem) {
     }
 
     let cafeHTML = '';
-    if (gem.breakfastStop || gem.cafe) {
+    let cafeName = '';
+    
+    if (typeof gem.cafe === 'string' && gem.cafe.trim() !== '' && gem.cafe !== 'true') {
+        cafeName = gem.cafe;
+    } else if (typeof gem.breakfastStop === 'string' && gem.breakfastStop.trim() !== '' && gem.breakfastStop !== 'true') {
+        cafeName = gem.breakfastStop;
+    } else if (gem.cafe || gem.breakfastStop) {
+        cafeName = 'Cafe / Rest Stop';
+    }
+
+    if (cafeName !== '') {
         cafeHTML = `
             <div style="margin-bottom: 32px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
                 <div style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; font-weight: 800;">Pit Stop</div>
-                <div style="font-size: 14px; font-weight: 600; color: #d0d0d0; display: flex; align-items: center; gap: 8px;">☕ ${gem.breakfastStop || gem.cafe}</div>
+                <div style="font-size: 14px; font-weight: 600; color: #d0d0d0; display: flex; align-items: center; gap: 8px;">☕ ${cafeName}</div>
             </div>
         `;
     }
@@ -693,7 +818,7 @@ function showLocationCard(gem) {
         
         ${cafeHTML}
         
-        <a href="https://www.google.com/maps/dir/?api=1&destination=${gem.latitude},${gem.longitude}" target="_blank" id="start-route-btn">START ROUTE</a>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${gem.latitude},${gem.longitude}" target="_blank" id="start-route-btn" style="display: block; width: 100%; padding: 18px; border-radius: 12px; font-weight: 800; font-size: 15px; letter-spacing: 1px; text-transform: uppercase; text-align: center; text-decoration: none; cursor: pointer; background: #00f0ff; color: #000;">START ROUTE</a>
     `;
     card.style.display = 'flex';
     
@@ -742,43 +867,20 @@ function showLocationCard(gem) {
             }
         });
     }
-}
 
-// --- GUEST MODE ROUTING INTERCEPTOR ---
-const startRouteBtn = document.getElementById('start-route-btn');
-if (startRouteBtn) {
-    startRouteBtn.addEventListener('click', (e) => {
-        if (!auth.currentUser) {
-            e.preventDefault(); 
-            const card = document.getElementById('location-card');
-            if(card) card.style.display = 'none'; 
-            
-            document.body.classList.remove('logged-in');
-            
-            const aModal = document.getElementById('auth-modal');
-            if (aModal) {
-                aModal.style.display = 'block';
-                setTimeout(() => {
-                    aModal.style.opacity = '1';
-                    aModal.style.pointerEvents = 'auto';
-                }, 10);
+    const startRouteBtn = document.getElementById('start-route-btn');
+    if (startRouteBtn) {
+        startRouteBtn.addEventListener('click', (e) => {
+            if (!auth.currentUser) {
+                e.preventDefault(); 
+                
+                card.style.display = 'none'; 
+                document.body.classList.remove('card-open');
+                
+                if (window.launchApp) window.launchApp('join');
             }
-            
-            const loginStep = document.getElementById('login-step');
-            const qStep = document.getElementById('questionnaire-step');
-            
-            if (qStep) { qStep.classList.remove('active-view'); qStep.style.opacity = '0'; }
-            if (loginStep) { loginStep.classList.add('active-view'); loginStep.style.opacity = '1'; }
-            
-            if (loginStep && !document.getElementById('guest-lock-msg')) {
-                let lockMsg = document.createElement('div');
-                lockMsg.id = 'guest-lock-msg';
-                lockMsg.style.cssText = "background: rgba(0, 240, 255, 0.05); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 12px; margin-bottom: 24px; font-size: 11px; font-weight: 800; text-align: center; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(0,240,255,0.1);";
-                lockMsg.innerText = "Sign in to unlock live routing & telemetry";
-                loginStep.insertBefore(lockMsg, loginStep.firstChild);
-            }
-        }
-    });
+        });
+    }
 }
 
 function updateSavedTrailsSidebar() {
@@ -827,7 +929,7 @@ document.querySelectorAll('.utility-toggle').forEach(toggle => {
         const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
         let query = ''; let iconSVG = '';
 
-        if (toggleId === 'toggle-petrol') { query = `node["amenity"="fuel"](${bbox});`; iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999999" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="15" y2="22"></line><line x1="4" y1="9" x2="14" y2="9"></line><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"></path><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"></path></svg>`; }
+        if (toggleId === 'toggle-petrol') { query = `node["amenity"="fuel"](${bbox});`; iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999999" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="15" y2="22"></line><line x1="4" y1="9" x2="14" y2="9"></line><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"></path><path d="M14 13h2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"></path></svg>`; }
         else if (toggleId === 'toggle-food') { query = `node["amenity"~"restaurant|cafe|fast_food"](${bbox});`; iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999999" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 2.2 1.8 4 4 4h4c2.2 0 4-1.8 4-4V2"></path><line x1="7" y1="2" x2="7" y2="22"></line><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>`; }
         else if (toggleId === 'toggle-emergency') { query = `node["amenity"~"hospital|clinic|police"](${bbox});`; iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999999" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>`; }
 
