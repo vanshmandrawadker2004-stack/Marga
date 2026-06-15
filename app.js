@@ -71,6 +71,7 @@ function updateRecommendedCards(trailsData) {
                     <div class="absolute inset-0 bg-gradient-to-br from-[#00f0ff]/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div class="relative z-10 flex flex-col h-full">
                         
+                        <!-- Top: Vibe & Title -->
                         <div class="mb-4">
                             <div style="color: #00f0ff; font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;">
                                 ${trail.vibeType || 'Ride'}
@@ -80,12 +81,14 @@ function updateRecommendedCards(trailsData) {
                             </h3>
                         </div>
                         
+                        <!-- Middle: Intel Excerpt -->
                         <div class="flex-grow mb-6">
                             <p style="font-size: 13px; color: #888; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: 400;">
                                 ${excerpt}
                             </p>
                         </div>
                         
+                        <!-- Bottom: Stats -->
                         <div style="display: flex; align-items: center; margin-top: auto;">
                             <div style="flex: 1; padding-right: 16px;">
                                 <div style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; font-weight: 800;">Distance</div>
@@ -191,9 +194,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             updateSavedTrailsSidebar(); 
             
-            document.getElementById('profile-name').innerText = user.displayName || user.email.split('@')[0];
-            document.getElementById('profile-avatar').innerText = (user.displayName || user.email)[0].toUpperCase();
+            const displayName = user.displayName || user.email.split('@')[0];
+            const initial = (user.displayName || user.email)[0].toUpperCase();
+            
+            // Map UI Avatar
+            document.getElementById('profile-name').innerText = displayName;
+            document.getElementById('profile-avatar').innerText = initial;
             document.getElementById('profile-tag').innerText = `${data.bikeModel} | ${data.skillLevel}`;
+            
+            // Gateway UI Avatar Sync
+            const gwAvatar = document.getElementById('gateway-user-avatar');
+            if (gwAvatar) gwAvatar.innerText = initial;
+            const gwWelcome = document.getElementById('gateway-welcome-text');
+            if (gwWelcome) gwWelcome.innerText = displayName;
             
             document.body.classList.add('logged-in'); 
             
@@ -233,6 +246,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (profileAvatar) profileAvatar.innerText = "G";
             const profileTag = document.getElementById('profile-tag');
             if (profileTag) profileTag.innerText = "Preview Mode";
+            
+            const gwAvatar = document.getElementById('gateway-user-avatar');
+            if (gwAvatar) gwAvatar.innerText = 'G';
+            const gwWelcome = document.getElementById('gateway-welcome-text');
+            if (gwWelcome) gwWelcome.innerText = 'Welcome';
             
             const locCard = document.getElementById('location-card');
             if (locCard) locCard.style.display = 'none';
