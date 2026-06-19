@@ -278,12 +278,14 @@
             <h2 class="widget-title">Marga</h2>
             <p class="widget-subtitle" style="margin-bottom: 32px;">Unlock premium riding trails</p>
 
+            <input id="login-name" type="text" placeholder="Rider Name" class="widget-input" style="display: none; background: rgba(255,255,255,0.05) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.1) !important; padding: 16px !important; border-radius: 12px !important; width: 100% !important; margin-bottom: 12px !important; box-sizing: border-box !important;">
+
             <input id="login-email" type="email" placeholder="Rider Email" class="widget-input" style="background: rgba(255,255,255,0.05) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.1) !important; padding: 16px !important; border-radius: 12px !important; width: 100% !important; margin-bottom: 12px !important; box-sizing: border-box !important;">
             
             <input id="login-pass" type="password" placeholder="Password" class="widget-input" style="background: rgba(255,255,255,0.05) !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.1) !important; padding: 16px !important; border-radius: 12px !important; width: 100% !important; margin-bottom: 8px !important; box-sizing: border-box !important;">
 
             <div class="forgot-pass-container" style="text-align: right; margin-bottom: 24px;">
-                <a href="#" class="forgot-pass-link" style="color: #888; font-size: 12px; text-decoration: none;">Forgot password?</a>
+                <a href="#" id="forgot-pass-link" class="forgot-pass-link" style="color: #888; font-size: 12px; text-decoration: none;">Forgot password?</a>
             </div>
 
             <button id="login-submit-btn" class="widget-btn" style="width: 100%; background: #ffffff; color: #000000; font-weight: 800; padding: 16px; border-radius: 12px; border: none; cursor: pointer; font-size: 16px; margin-bottom: 24px;">Continue</button>
@@ -307,7 +309,7 @@
             <button id="guest-btn" style="width: 100%; background: transparent; border: 1px solid rgba(255, 255, 255, 0.1); color: #aaa; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 24px; transition: background 0.2s, color 0.2s;">Preview as Guest</button>
 
             <p class="widget-footer" style="text-align: center; color: #888; font-size: 14px; margin-bottom: 24px;">
-                New rider? <a href="#" onclick="document.getElementById('login-submit-btn').innerText = 'Sign Up'; document.getElementById('login-email').focus(); return false;" style="color: #fff; font-weight: 700; text-decoration: none;">Create an account</a>
+                <span id="auth-toggle-lead">New rider? </span><a href="#" id="auth-toggle-link" style="color: #fff; font-weight: 700; text-decoration: none;">Create an account</a>
             </p>
 
             <div class="legal-disclaimer" style="padding-top: 16px; font-size: 11px; color: #666; text-align: center; line-height: 1.5; border-top: 1px solid rgba(255,255,255,0.05);">
@@ -465,6 +467,10 @@
     </div>
 
     <div id="map"></div>
+
+    <!-- Result count: fades in with the markers, clears on a new search -->
+    <div id="result-count-label"></div>
+
     <div id="location-card"></div>
 
     <script>

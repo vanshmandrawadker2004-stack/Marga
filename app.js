@@ -1,6 +1,6 @@
 // 1. IMPORT FIREBASE 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // 2. CONFIGURATION
@@ -21,13 +21,26 @@ const googleProvider = new GoogleAuthProvider();
 
 // 3. MAP INITIALIZATION
 const map = L.map('map', { zoomControl: false }).setView([18.5204, 73.8567], 8);
-L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoidmFuc2htMjAwNCIsImEiOiJjbXB1c2lmOHExZ3Y4MnFzZWhoZXoyN2xlIn0.zA6kBde68WK6YdB1tJQ0Fw', {
-    tileSize: 512, zoomOffset: -1, maxZoom: 19, attribution: '© Mapbox © OpenStreetMap'
-}).addTo(map);
+// Add the Mapbox map background. We try to get the token from the backend
+// (/api/config), but if that isn't available — e.g. the page is opened without
+// the server running — we fall back to a built-in token so the map ALWAYS shows.
+const FALLBACK_MAPBOX_TOKEN = 'pk.eyJ1IjoidmFuc2htMjAwNCIsImEiOiJjbXB1c2lmOHExZ3Y4MnFzZWhoZXoyN2xlIn0.zA6kBde68WK6YdB1tJQ0Fw';
+
+function addMapTiles(token) {
+    L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${token}`, {
+        tileSize: 512, zoomOffset: -1, maxZoom: 19, attribution: '© Mapbox © OpenStreetMap'
+    }).addTo(map);
+}
+
+fetch('/api/config')
+    .then(r => r.json())
+    .then(cfg => addMapTiles(cfg.mapboxToken || FALLBACK_MAPBOX_TOKEN))
+    .catch(() => addMapTiles(FALLBACK_MAPBOX_TOKEN));
 
 let currentMarkers = [];
 let heatLayer = null;
 let routingControl = null;
+let activeRouteLayers = [];
 let currentRouteCoords = []; 
 let userLat = 18.5204; 
 let userLng = 73.8567; 
@@ -236,9 +249,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Applies the guest ("Preview Mode") UI when there's no Firebase user.
+    function applyGuestState() {
+        document.body.classList.add('logged-in');
+        if (window.closeAuthModal) window.closeAuthModal();
+
+        const setText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
+        setText('map-pill-name', 'Guest Rider');
+        setText('profile-name', 'Guest Rider');
+        setText('profile-avatar', 'G');
+        setText('profile-tag', 'Preview Mode');
+
+        if (document.body.classList.contains('gateway-active')) {
+            document.body.classList.remove('gateway-active');
+            const gateway = document.getElementById('marga-gateway');
+            if (gateway) {
+                gateway.style.opacity = '0';
+                gateway.style.pointerEvents = 'none';
+                setTimeout(() => { gateway.style.display = 'none'; }, 800);
+            }
+        }
+
+        executeSearch();
+    }
+
+    // Guest mode survives refresh via sessionStorage — apply it immediately, before
+    // Firebase's async callback resolves, so there's no flash of the gateway/login.
+    if (sessionStorage.getItem('marga_guest') === 'true') {
+        applyGuestState();
+    }
+
     onAuthStateChanged(auth, (user) => {
         if (user) {
+            sessionStorage.removeItem('marga_guest'); // a real account replaces guest mode
             routeUser(user, isInitialAuthCheck);
+        } else if (sessionStorage.getItem('marga_guest') === 'true') {
+            // Keep guest mode active instead of tearing the UI down.
+            if (!document.body.classList.contains('logged-in')) applyGuestState();
         } else {
             document.body.classList.remove('logged-in');
             document.body.classList.remove('menu-open'); 
@@ -286,8 +333,18 @@ document.addEventListener('DOMContentLoaded', () => {
         isInitialAuthCheck = false; // Next time it fires, it will be a manual action
     });
 
-    if (logoutBtn) logoutBtn.addEventListener('click', () => signOut(auth));
-    if (gatewayLogoutBtn) gatewayLogoutBtn.addEventListener('click', () => signOut(auth));
+    // Logging out always clears guest mode. A guest has no Firebase user, so
+    // signOut() won't fire onAuthStateChanged — reload to return to the gateway.
+    const handleLogout = () => {
+        sessionStorage.removeItem('marga_guest');
+        if (auth.currentUser) {
+            signOut(auth);
+        } else {
+            location.reload();
+        }
+    };
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+    if (gatewayLogoutBtn) gatewayLogoutBtn.addEventListener('click', handleLogout);
 
     if (saveProfileBtn) saveProfileBtn.addEventListener('click', async () => {
         const user = auth.currentUser;
@@ -321,19 +378,119 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { console.error(e); }
     });
 
+    // --- LOGIN / SIGNUP MODE TOGGLE ---
+    const nameInput = document.getElementById('login-name');
+    const authToggleLink = document.getElementById('auth-toggle-link');
+    const authToggleLead = document.getElementById('auth-toggle-lead');
+    const forgotLink = document.getElementById('forgot-pass-link');
+    const FORGOT_DEFAULT_TEXT = forgotLink ? forgotLink.innerText : 'Forgot password?';
+    let forgotMsgTimer = null;
+
+    let authMode = 'login'; // 'login' | 'signup'
+
+    function setAuthMode(mode) {
+        authMode = mode;
+        resetForgotLink();
+        if (mode === 'signup') {
+            if (nameInput) nameInput.style.display = 'block';
+            if (loginBtn) loginBtn.innerText = 'Create Account';
+            if (authToggleLead) authToggleLead.innerText = 'Already have an account? ';
+            if (authToggleLink) authToggleLink.innerText = 'Sign in';
+            if (nameInput) nameInput.focus();
+        } else {
+            if (nameInput) nameInput.style.display = 'none';
+            if (loginBtn) loginBtn.innerText = 'Continue';
+            if (authToggleLead) authToggleLead.innerText = 'New rider? ';
+            if (authToggleLink) authToggleLink.innerText = 'Create an account';
+            if (emailInput) emailInput.focus();
+        }
+    }
+
+    if (authToggleLink) {
+        authToggleLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            setAuthMode(authMode === 'login' ? 'signup' : 'login');
+        });
+    }
+
+    // --- FORGOT PASSWORD (all feedback inline; no popups) ---
+    function resetForgotLink() {
+        clearTimeout(forgotMsgTimer);
+        if (!forgotLink) return;
+        forgotLink.innerText = FORGOT_DEFAULT_TEXT;
+        forgotLink.style.color = '#888';
+        forgotLink.style.opacity = '1';
+        forgotLink.style.pointerEvents = 'auto';
+    }
+
+    // Replace the link in-place with a message, then fade out and restore it.
+    function showForgotMessage(msg, color) {
+        if (!forgotLink) return;
+        clearTimeout(forgotMsgTimer);
+        forgotLink.innerText = msg;
+        forgotLink.style.color = color;
+        forgotLink.style.transition = 'opacity 0.5s ease';
+        forgotLink.style.opacity = '1';
+        forgotLink.style.pointerEvents = 'none'; // it's a message now, not a link
+        forgotMsgTimer = setTimeout(() => {
+            forgotLink.style.opacity = '0';       // fade out after 4s
+            setTimeout(resetForgotLink, 500);     // then restore the link
+        }, 4000);
+    }
+
+    // Shake the email input + flash a red border, without sending.
+    function shakeEmail() {
+        if (!emailInput) return;
+        emailInput.style.setProperty('border', '1px solid #ff4444', 'important');
+        emailInput.classList.remove('input-shake');
+        void emailInput.offsetWidth; // force reflow so the animation can replay
+        emailInput.classList.add('input-shake');
+        setTimeout(() => {
+            emailInput.classList.remove('input-shake');
+            emailInput.style.setProperty('border', '1px solid rgba(255,255,255,0.1)', 'important');
+        }, 800);
+    }
+
+    if (forgotLink) {
+        forgotLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = emailInput ? emailInput.value.trim() : '';
+
+            // Empty field → shake instead of sending.
+            if (!email) { shakeEmail(); return; }
+
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showForgotMessage('Reset link sent to your email', '#00f0ff');
+            } catch (err) {
+                let msg = 'Could not send reset link';
+                if (err.code === 'auth/invalid-email') msg = 'That email looks invalid';
+                else if (err.code === 'auth/user-not-found') msg = 'No account found for that email';
+                showForgotMessage(msg, '#ff4444');
+            }
+        });
+    }
+
     if (loginBtn) {
         loginBtn.addEventListener('click', async () => {
             const email = emailInput ? emailInput.value.trim() : '';
             const pass = passInput ? passInput.value.trim() : '';
             if (!email.includes('@') || pass.length < 6) return alert("Invalid email/password.");
-            try { await signInWithEmailAndPassword(auth, email, pass); } 
-            catch (error) {
-                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
-                    try {
-                        const res = await createUserWithEmailAndPassword(auth, email, pass);
-                        await setDoc(doc(db, "users", res.user.uid), { email: res.user.email, authProvider: "email", bikeModel: "Unknown", savedTrails: [], createdAt: new Date() });
-                        routeUser(res.user, false); 
-                    } catch (err) { alert("Error: " + err.message); }
+
+            if (authMode === 'signup') {
+                const name = nameInput ? nameInput.value.trim() : '';
+                if (!name) return alert("Please enter your name.");
+                try {
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    await updateProfile(res.user, { displayName: name });
+                    await setDoc(doc(db, "users", res.user.uid), { email: res.user.email, displayName: name, authProvider: "email", bikeModel: "Unknown", savedTrails: [], createdAt: new Date() });
+                    routeUser(res.user, false);
+                } catch (err) { alert("Error: " + err.message); }
+            } else {
+                try {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                } catch (error) {
+                    alert("Login failed: " + (error.code === 'auth/invalid-credential' ? "Incorrect email or password." : error.message));
                 }
             }
         });
@@ -342,6 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (guestBtn) {
         guestBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            sessionStorage.setItem('marga_guest', 'true'); // remember guest mode across refresh
             document.body.classList.add('logged-in');
             
             if (window.closeAuthModal) window.closeAuthModal();
@@ -409,7 +567,7 @@ function parseConversationalQuery(rawQuery) {
     if (minMatch) cleanText = cleanText.replace(minMatch[0], '');
     if (kmMatch) cleanText = cleanText.replace(kmMatch[0], '');
 
-    const fillerWords = ['pradesh','nadu','state','rides','ride','place','places','i','want','to','go','for','a','show','me','some','near','around','the','is','are','in','on','at','with','under','less','than','away','from','here','find','search','within','max','that','take','takes','it','will','which','have','has','can','you','my','give','we','do','any','would','love','looking','out','there','hours','hour','hrs','hr','h','minutes','minute','mins','min','m','kms','km','kilometers','kilometer','of'];
+    const fillerWords = ['pradesh','nadu','state','rides','ride','place','places','i','want','to','go','for','a','show','me','some','near','around','the','is','are','in','on','at','with','under','less','than','away','from','here','find','search','within','max','that','take','takes','it','will','which','have','has','can','you','my','give','we','do','any','would','love','looking','out','there','hours','hour','hrs','hr','h','minutes','minute','mins','min','m','kms','km','kilometers','kilometer','of','something','few','good','nice','great','quick','long','short','fun','cool','awesome','best','top','perfect','easy','close','nearby','local','suggest','recommendation','take','drive','trip','visit','explore','beautiful','pretty','epic','amazing','somewhere','anything','kind','type','sort','bit','lot','little','big'];
     
     cleanText.split(/\s+/).forEach(word => {
         let cleanWord = word.replace(/[^a-z0-9]/g, ''); 
@@ -437,9 +595,10 @@ function executeSearch() {
     currentMarkers.forEach(m => map.removeLayer(m));
     currentMarkers = [];
     
-    if (routingControl) { 
-        map.removeLayer(routingControl);
-        routingControl = null; 
+    activeRouteLayers.forEach(l => map.removeLayer(l));
+    activeRouteLayers = [];
+    if (routingControl) {
+        routingControl = null;
         currentRouteCoords = []; 
         document.querySelectorAll('.utility-toggle').forEach(cb => {
             if (cb.checked) { cb.checked = false; utilityLayers[cb.id].clearLayers(); }
@@ -448,6 +607,10 @@ function executeSearch() {
     
     const locationCard = document.getElementById('location-card');
     if (locationCard) locationCard.style.display = 'none';
+
+    // Reset previous-search UX: clear the count label.
+    const prevCount = document.getElementById('result-count-label');
+    if (prevCount) prevCount.classList.remove('visible');
 
     const smartQuery = parseConversationalQuery(query);
     const toggleDist = document.getElementById('toggle-distance');
@@ -465,6 +628,7 @@ function executeSearch() {
 
         const featureWords = ['ghat', 'coast', 'sunrise', 'sunset', 'forest', 'jungle', 'offroad', 'dirt', 'mountain', 'lake', 'waterfall', 'viewpoint', 'highway', 'chill', 'twisties', 'adventure', 'scenic', 'corners', 'dam', 'valley', 'route', 'trail'];
         const locationKeywords = smartQuery.searchKeywords.filter(kw => !featureWords.includes(kw));
+        const isFeatureOnlySearch = smartQuery.searchKeywords.length > 0 && locationKeywords.length === 0;
 
         const aliasMap = {
             'bangalore': ['chikkaballapur', 'tumkur', 'magadi', 'hosur', 'anekal', 'doddaballapura', 'ramanagara', 'kanakapura', 'kalavara', 'bengaluru'],
@@ -515,13 +679,14 @@ function executeSearch() {
             if (smartQuery.extractedMaxKm) currentMaxKm = smartQuery.extractedMaxKm;
             else if (isDistActive) currentMaxKm = parseInt(document.getElementById('range-distance').value);
             
-            if (!isExplicitTargetSearch && distKm > currentMaxKm) isMatch = false;
+            const effectiveMaxKm = isFeatureOnlySearch ? 250 : currentMaxKm;
+            if (!isExplicitTargetSearch && distKm > effectiveMaxKm) isMatch = false;
 
             if (isMatch) {
                 if (!isExplicitTargetSearch) {
-                    const estTime = gem.rideTimeMinutes || (distKm * 1.5);
-                    if (smartQuery.extractedMaxMins) { if (estTime > smartQuery.extractedMaxMins) isMatch = false; } 
-                    else if (isDurActive) { const maxDurHrs = parseFloat(document.getElementById('range-duration').value); if (estTime > (maxDurHrs * 60)) isMatch = false; }
+                    const estTime = gem.rideTimeMinutes || (distKm * 2.0);
+                    if (smartQuery.extractedMaxMins) { if (estTime > smartQuery.extractedMaxMins) isMatch = false; }
+                    else if (!isFeatureOnlySearch && isDurActive) { const maxDurHrs = parseFloat(document.getElementById('range-duration').value); if (estTime > (maxDurHrs * 60)) isMatch = false; }
                 }
             }
 
@@ -628,13 +793,23 @@ function executeSearch() {
             if (query !== '' || isDistActive || isDurActive || activeUtilities.length > 0) {
                 map.flyToBounds(bounds, { padding: [50, 50], duration: 1.5 });
             }
+
+            // Result count — fades in alongside the markers.
+            const countLabel = document.getElementById('result-count-label');
+            if (countLabel) {
+                const n = matchedGems.length;
+                countLabel.innerText = `${n} ${n === 1 ? 'place' : 'places'} found`;
+                countLabel.classList.add('visible');
+            }
         } else {
+            // No matches on a real (non-empty) search: show a brief inline message
+            // in the search bar, then restore what the rider typed.
             if (query !== '') {
                 const searchBar = document.getElementById('search-bar');
                 if (searchBar) {
                     const originalText = searchBar.value;
                     searchBar.style.color = "#555";
-                    searchBar.value = "No results found.";
+                    searchBar.value = "No trails found";
                     setTimeout(() => { searchBar.value = originalText; searchBar.style.color = "#fff"; }, 1500);
                 }
             }
@@ -644,16 +819,25 @@ function executeSearch() {
 
 // --- ROUTING ---
 function calculateRoute(destLat, destLng) {
-    if (routingControl) { map.removeLayer(routingControl); routingControl = null; }
-    const token = 'pk.eyJ1IjoidmFuc2htMjAwNCIsImEiOiJjbXB1c2lmOHExZ3Y4MnFzZWhoZXoyN2xlIn0.zA6kBde68WK6YdB1tJQ0Fw'; 
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${userLng},${userLat};${destLng},${destLat}?geometries=geojson&overview=full&access_token=${token}`;
+    activeRouteLayers.forEach(l => map.removeLayer(l));
+    activeRouteLayers = [];
+    routingControl = null;
+    // Try the backend proxy first; if it isn't available (e.g. the page is opened
+    // without the server running), fall back to Mapbox directly so the route always draws.
+    const proxyUrl = `/api/route?from=${userLng},${userLat}&to=${destLng},${destLat}`;
+    const directUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${userLng},${userLat};${destLng},${destLat}?geometries=geojson&overview=full&access_token=${FALLBACK_MAPBOX_TOKEN}`;
 
-    fetch(url).then(r => r.json()).then(data => {
+    fetch(proxyUrl)
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => (data && data.routes && data.routes.length) ? data : Promise.reject())
+        .catch(() => fetch(directUrl).then(r => r.json()))
+        .then(data => {
         if (!data.routes || data.routes.length === 0) return;
         const route = data.routes[0];
         const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
 
         routingControl = L.polyline(coordinates, { color: '#00f0ff', weight: 5, opacity: 0.85 }).addTo(map);
+        activeRouteLayers.push(routingControl);
         currentRouteCoords = coordinates.map(c => ({ lat: c[0], lng: c[1] }));
 
         const realDistanceKm = (route.distance / 1000).toFixed(1);
@@ -689,21 +873,32 @@ function calculateRoute(destLat, destLng) {
 }
 
 // --- PREMIUM TELEMETRY GENERATOR ---
-function generateTelemetrySVG(lat) {
+// Cache of real elevation profiles, keyed by "lat,lng" so reopening the same
+// card doesn't re-hit the Open-Elevation API.
+const elevationCache = new Map();
+
+// Deterministic noise profile, seeded by latitude — used as the skeleton
+// placeholder while real data loads, and as the silent fallback if it fails.
+function noiseElevationProfile(lat) {
     let seed = lat * 10000;
     const random = () => { let x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
-    
+
     const pts = [];
     let currentElev = 400;
-    for(let i=0; i<15; i++) {
+    for (let i = 0; i < 15; i++) {
         currentElev += (random() * 100 - 40);
         pts.push(currentElev);
     }
-    
+    return pts;
+}
+
+// Builds the elevation chart markup from an array of elevation values.
+// `loading` dims it slightly so the noise profile reads as a skeleton.
+function elevationChartHTML(pts, dataKey, loading) {
     const max = Math.max(...pts);
     const min = Math.min(...pts);
     const step = 300 / (pts.length - 1);
-    
+
     const points = pts.map((p, i) => {
         const x = i * step;
         const y = 40 - ((p - min) / (max - min || 1) * 40);
@@ -711,7 +906,7 @@ function generateTelemetrySVG(lat) {
     }).join(' ');
 
     return `
-        <div style="margin-bottom: 28px;">
+        <div id="elevation-chart" data-key="${dataKey}" style="margin-bottom: 28px; opacity: ${loading ? 0.45 : 1}; transition: opacity 0.5s ease;">
             <div style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; font-weight: 800;">Elevation</div>
             <svg width="100%" height="40" viewBox="0 0 300 40" preserveAspectRatio="none" style="overflow: visible;">
                 <defs>
@@ -727,7 +922,136 @@ function generateTelemetrySVG(lat) {
     `;
 }
 
+// Used in the card template: renders the noise profile as the initial skeleton.
+function generateTelemetrySVG(lat, dataKey) {
+    return elevationChartHTML(noiseElevationProfile(lat), dataKey || '', true);
+}
+
+// Fetches a real elevation profile by sampling 12 points along the straight
+// line from the rider to the trail, then swaps the skeleton for the real chart.
+// Silent on failure/timeout: just un-dims the noise fallback. Caches by "lat,lng".
+async function loadElevationProfile(gem) {
+    const lat = gem.latitude, lng = gem.longitude;
+    const key = `${lat},${lng}`;
+
+    // Resolve the chart element only if it still belongs to this trail.
+    const getChart = () => {
+        const el = document.getElementById('elevation-chart');
+        return (el && el.dataset.key === key) ? el : null;
+    };
+    // Reveal the noise fallback at full opacity (no real data available).
+    const keepFallback = () => { const el = getChart(); if (el) el.style.opacity = '1'; };
+
+    if (typeof lat !== 'number' || typeof lng !== 'number' ||
+        typeof userLat !== 'number' || typeof userLng !== 'number') {
+        return keepFallback();
+    }
+
+    // Serve from cache on repeat opens.
+    if (elevationCache.has(key)) {
+        const el = getChart();
+        if (el) el.outerHTML = elevationChartHTML(elevationCache.get(key), key, false);
+        return;
+    }
+
+    // 12 evenly spaced sample points along [user] -> [trail].
+    const N = 12;
+    const locations = [];
+    for (let i = 0; i < N; i++) {
+        const t = i / (N - 1);
+        locations.push({
+            latitude: userLat + (lat - userLat) * t,
+            longitude: userLng + (lng - userLng) * t
+        });
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+
+    try {
+        const res = await fetch('https://api.open-elevation.com/api/v1/lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ locations }),
+            signal: controller.signal
+        });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        const elevations = (data.results || [])
+            .map(r => r && r.elevation)
+            .filter(e => typeof e === 'number');
+        if (elevations.length < 2) throw new Error('insufficient elevation data');
+
+        elevationCache.set(key, elevations);
+
+        const el = getChart();
+        if (el) el.outerHTML = elevationChartHTML(elevations, key, false);
+    } catch (err) {
+        clearTimeout(timer);
+        keepFallback(); // silent — keep the noise-based fallback
+    }
+}
+
 // --- LOCATION CARD UI ---
+// Pull real ground-level photos of a trail from Wikimedia Commons using a
+// geosearch around the trail's coordinates, then inject them into the card's
+// carousel. Falls back to a "Visual Data Pending" placeholder if nothing nearby.
+async function loadTrailPhotos(gem) {
+    const lat = gem.latitude;
+    const lng = gem.longitude;
+    if (typeof lat !== 'number' || typeof lng !== 'number') return;
+
+    // Resolve the carousel element and confirm it still belongs to this trail
+    // (the user may have opened a different card before the fetch resolves).
+    const getCarousel = () => {
+        const el = document.getElementById('auto-photo-carousel');
+        if (!el) return null;
+        if (el.dataset.loc !== (gem.locationName || '')) return null;
+        return el;
+    };
+
+    const imgStyle = 'width: 140px; height: 90px; object-fit: cover; border-radius: 8px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05);';
+    const placeholder = '<div style="color: #444; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 16px 0; width: 100%; text-align: center;">Visual Data Pending</div>';
+
+    // generator=geosearch returns File: pages within radius (metres); imageinfo
+    // gives us a 400px-wide thumbnail URL for each. origin=* enables anon CORS.
+    const endpoint = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*'
+        + '&generator=geosearch&ggsnamespace=6&ggsprimary=all&ggsradius=10000&ggslimit=20'
+        + `&ggscoord=${lat}|${lng}`
+        + '&prop=imageinfo&iiprop=url&iiurlwidth=400';
+
+    try {
+        const res = await fetch(endpoint);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        const pages = (data.query && data.query.pages) ? Object.values(data.query.pages) : [];
+        const urls = pages
+            .sort((a, b) => (a.index || 0) - (b.index || 0)) // preserve nearest-first order
+            .map(p => p.imageinfo && p.imageinfo[0] && (p.imageinfo[0].thumburl || p.imageinfo[0].url))
+            .filter(u => u && /\.(jpe?g|png|webp)$/i.test(u.split('?')[0])) // photos only, skip svg/pdf/audio
+            .slice(0, 6);
+
+        const carousel = getCarousel();
+        if (!carousel) return; // card closed or switched — nothing to update
+
+        if (urls.length === 0) {
+            carousel.innerHTML = placeholder;
+            return;
+        }
+
+        carousel.innerHTML = urls
+            .map(u => `<img src="${u}" loading="lazy" style="${imgStyle}">`)
+            .join('');
+    } catch (err) {
+        console.warn('Wikimedia photo lookup failed:', err);
+        const carousel = getCarousel();
+        if (carousel) carousel.innerHTML = placeholder;
+    }
+}
+
 function showLocationCard(gem) {
     const card = document.getElementById('location-card');
     if (!card) return;
@@ -737,9 +1061,11 @@ function showLocationCard(gem) {
         const imageTags = gem.images.map(imgUrl => `<img src="${imgUrl}" style="width: 140px; height: 90px; object-fit: cover; border-radius: 8px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05);">`).join('');
         carouselHTML = `<div class="photo-carousel" style="display: flex; gap: 12px; overflow-x: auto; margin-bottom: 24px; padding-bottom: 4px;">${imageTags}</div>`;
     } else {
+        // No curated images for this trail — load real photos of the place from
+        // Wikimedia Commons (geosearch by coordinates). Filled in asynchronously below.
         carouselHTML = `
-        <div class="photo-carousel" style="display: flex; gap: 12px; overflow-x: auto; margin-bottom: 24px; padding-bottom: 4px;">
-            <div style="color: #444; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 16px 0; width: 100%; text-align: center;">Visual Data Pending</div>
+        <div id="auto-photo-carousel" class="photo-carousel" data-loc="${(gem.locationName || '').replace(/"/g, '&quot;')}" style="display: flex; gap: 12px; overflow-x: auto; margin-bottom: 24px; padding-bottom: 4px;">
+            <div style="color: #444; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 16px 0; width: 100%; text-align: center;">Loading views…</div>
         </div>`;
     }
 
@@ -842,7 +1168,7 @@ function showLocationCard(gem) {
         
         ${distDurHTML}
         ${carouselHTML}
-        ${generateTelemetrySVG(gem.latitude)}
+        ${generateTelemetrySVG(gem.latitude, gem.latitude + ',' + gem.longitude)}
         
         ${solarHTML} 
         
@@ -856,8 +1182,16 @@ function showLocationCard(gem) {
         <a href="https://www.google.com/maps/dir/?api=1&destination=${gem.latitude},${gem.longitude}" target="_blank" id="start-route-btn" style="display: block; width: 100%; padding: 18px; border-radius: 12px; font-weight: 800; font-size: 15px; letter-spacing: 1px; text-transform: uppercase; text-align: center; text-decoration: none; cursor: pointer; background: #00f0ff; color: #000;">START ROUTE</a>
     `;
     card.style.display = 'flex';
-    
+
     document.body.classList.add('card-open');
+
+    // Kick off real-photo loading for trails without curated images.
+    if (!(gem.images && gem.images.length > 0)) {
+        loadTrailPhotos(gem);
+    }
+
+    // Replace the skeleton elevation chart with real Open-Elevation data.
+    loadElevationProfile(gem);
 
     const closeBtn = document.getElementById('close-card-btn');
     if (closeBtn) {

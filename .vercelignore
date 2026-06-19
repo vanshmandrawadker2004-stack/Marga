@@ -1,0 +1,7 @@
+firebase-service-account.json
+.env
+database.json
+*.mjs
+migrate.js
+node_modules
+.DS_Store

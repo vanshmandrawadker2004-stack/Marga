@@ -400,6 +400,15 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
 .forgot-pass-link { color: rgba(255, 255, 255, 0.5); font-size: 12px; text-decoration: none; transition: color 0.2s ease; }
 .forgot-pass-link:hover { color: #ffffff; }
 
+@keyframes input-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+.input-shake { animation: input-shake 0.4s ease; }
+
 .divider { display: flex; align-items: center; text-align: center; margin: 20px 0; color: rgba(255, 255, 255, 0.3); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
 .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
 .divider span { padding: 0 10px; }
@@ -886,3 +895,23 @@ body.logged-in #auth-modal {
 .image-gradient-overlay {
     background: linear-gradient(to top, rgba(5,5,7,1) 0%, rgba(5,5,7,0.6) 50%, rgba(5,5,7,0) 100%);
 }
+
+/* --- RESULT COUNT LABEL --- */
+#result-count-label {
+    position: fixed;
+    left: 50%;
+    bottom: 150px;                 /* sits just above the search chips */
+    transform: translateX(-50%);
+    z-index: 3999;
+    font-family: 'JetBrains Mono', monospace;
+    color: #00f0ff;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+#result-count-label.visible { opacity: 1; }
