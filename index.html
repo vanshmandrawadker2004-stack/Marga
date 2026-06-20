@@ -519,21 +519,20 @@
             </div>
         </div>
 
-        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.25);margin-bottom:16px;">Tools</p>
-        <div style="display:flex;gap:12px;margin-bottom:28px;">
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;" onclick="document.getElementById('toggle-radar').click(); window.closeMobileSheet();">
-                <div style="width:100%;height:52px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;display:flex;align-items:center;justify-content:center;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
-                </div>
-                <span style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;">Radar</span>
+        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.25);margin-bottom:20px;">Filters</p>
+        <div style="margin-bottom:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <span style="font-size:13px;color:rgba(255,255,255,0.5);">Max Distance</span>
+                <span id="mobile-distance-val" style="font-size:13px;font-weight:600;color:#00e5ff;">100 km</span>
             </div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;" onclick="document.querySelector('#top-toolbar .dropdown-container:last-of-type .icon-btn').click();">
-                <div style="width:100%;height:52px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;display:flex;align-items:center;justify-content:center;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                </div>
-                <span style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;">Filters</span>
+            <input type="range" min="10" max="200" value="100" id="mobile-range-distance" style="width:100%;" oninput="document.getElementById('range-distance').value=this.value; document.getElementById('distance-val').textContent=this.value+' km'; document.getElementById('mobile-distance-val').textContent=this.value+' km';">
+        </div>
+        <div style="margin-bottom:28px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <span style="font-size:13px;color:rgba(255,255,255,0.5);">Max Duration</span>
+                <span id="mobile-duration-val" style="font-size:13px;font-weight:600;color:#00e5ff;">2 hrs</span>
             </div>
-            <div style="flex:1;"></div>
+            <input type="range" min="0.5" max="10" step="0.5" value="2" id="mobile-range-duration" style="width:100%;" oninput="document.getElementById('range-duration').value=this.value; document.getElementById('duration-val').textContent=this.value+' hrs'; document.getElementById('mobile-duration-val').textContent=this.value+' hrs';">
         </div>
 
         <button onclick="window.closeMobileSheet();" style="width:100%;padding:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;color:rgba(255,255,255,0.35);font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.5px;">Done</button>
