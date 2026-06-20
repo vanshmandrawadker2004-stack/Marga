@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marga - Curated places for every kind of ride.</title>
+    <meta name="description" content="Find your next motorcycle ride. Solar departure times, NLP search, and curated trails across the Western Ghats.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23080a0e'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' letter-spacing='1' fill='%2300e5ff'>M</text></svg>">
+
+    <meta property="og:title" content="Marga — Curated rides for every kind of rider">
+    <meta property="og:description" content="Find your next motorcycle ride. Solar departure times, NLP search, and curated trails across the Western Ghats.">
+    <meta property="og:image" content="https://marga.app/og-image.jpg">
+    <meta property="og:url" content="https://marga.app">
+    <meta property="og:type" content="website">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Marga — Curated rides for every kind of rider">
+    <meta name="twitter:description" content="Find your next motorcycle ride. Solar departure times, NLP search, and curated trails across the Western Ghats.">
+    <meta name="twitter:image" content="https://marga.app/og-image.jpg">
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -166,9 +179,13 @@
                         </div>
                     </div>
                 </div>
-                <button class="md:hidden text-primary opacity-80">
+                <button id="mobile-menu-btn" class="md:hidden text-primary opacity-80">
                     <span class="material-symbols-outlined text-[24px]">menu</span>
                 </button>
+            </div>
+
+            <div id="mobile-menu" style="display:none; border-top: 1px solid rgba(255,255,255,0.05); padding: 16px 24px 20px; background: #050507;">
+                <button id="mobile-join-btn" type="button" onclick="window.launchApp('join'); document.getElementById('mobile-menu').style.display='none';" style="width:100%; background:#fff; color:#050507; font-weight:600; padding:14px; border:none; border-radius:12px; font-size:15px; cursor:pointer;">Join Club</button>
             </div>
         </nav>
 
@@ -474,6 +491,14 @@
     <div id="location-card"></div>
 
     <script>
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.style.display = mobileMenu.style.display === 'none' ? 'block' : 'none';
+            });
+        }
+
         window.closeAuthModal = function() {
             const authModal = document.getElementById('auth-modal');
             const blurOverlay = document.getElementById('modal-blur-overlay');

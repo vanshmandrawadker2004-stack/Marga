@@ -471,26 +471,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const showAuthError = (msg) => {
+        let errEl = document.getElementById('auth-error-msg');
+        if (!errEl) {
+            errEl = document.createElement('div');
+            errEl.id = 'auth-error-msg';
+            errEl.style.cssText = 'color:#ff4d4d;font-size:13px;margin:-16px 0 16px;text-align:center;';
+            loginBtn.parentNode.insertBefore(errEl, loginBtn);
+        }
+        errEl.textContent = msg;
+    };
+
+    const clearAuthError = () => {
+        const errEl = document.getElementById('auth-error-msg');
+        if (errEl) errEl.textContent = '';
+    };
+
     if (loginBtn) {
         loginBtn.addEventListener('click', async () => {
+            clearAuthError();
             const email = emailInput ? emailInput.value.trim() : '';
             const pass = passInput ? passInput.value.trim() : '';
-            if (!email.includes('@') || pass.length < 6) return alert("Invalid email/password.");
+            if (!email.includes('@') || pass.length < 6) return showAuthError("Enter a valid email and a password of at least 6 characters.");
 
             if (authMode === 'signup') {
                 const name = nameInput ? nameInput.value.trim() : '';
-                if (!name) return alert("Please enter your name.");
+                if (!name) return showAuthError("Please enter your name.");
                 try {
                     const res = await createUserWithEmailAndPassword(auth, email, pass);
                     await updateProfile(res.user, { displayName: name });
                     await setDoc(doc(db, "users", res.user.uid), { email: res.user.email, displayName: name, authProvider: "email", bikeModel: "Unknown", savedTrails: [], createdAt: new Date() });
                     routeUser(res.user, false);
-                } catch (err) { alert("Error: " + err.message); }
+                } catch (err) { showAuthError(err.message); }
             } else {
                 try {
                     await signInWithEmailAndPassword(auth, email, pass);
                 } catch (error) {
-                    alert("Login failed: " + (error.code === 'auth/invalid-credential' ? "Incorrect email or password." : error.message));
+                    showAuthError(error.code === 'auth/invalid-credential' ? "Incorrect email or password." : error.message);
                 }
             }
         });
@@ -758,7 +775,7 @@ function executeSearch() {
                 if (heatLayer) map.removeLayer(heatLayer);
                 
                 const heatData = matchedGems.map((gem, index) => {
-                    bounds.push([gem.latitude, longitude]);
+                    bounds.push([gem.latitude, gem.longitude]);
                     let intensity = (index < 3 && gem.personalScore >= 5) ? 1.0 : 0.6; 
                     return [parseFloat(gem.latitude), parseFloat(gem.longitude), intensity];
                 });
@@ -1093,7 +1110,7 @@ function showLocationCard(gem) {
     let solarHTML = '';
     if (typeof SunCalc !== 'undefined') {
         const rawDistKm = map.distance([userLat, userLng], [gem.latitude, gem.longitude]) / 1000;
-        const rideMins = gem.rideTimeMinutes || (rawDistKm * 1.5);
+        const rideMins = gem.rideTimeMinutes || (rawDistKm * 2.0);
         
         const times = SunCalc.getTimes(new Date(), gem.latitude, gem.longitude);
         
