@@ -613,21 +613,28 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
 
     /* Hide ALL toolbar groups on mobile — hamburger handles them */
     #top-toolbar .toolbar-group:nth-child(1),
-    #top-toolbar .toolbar-group:nth-child(2) {
+    #top-toolbar .toolbar-group:nth-child(2),
+    #top-toolbar .toolbar-group:nth-child(3) {
         display: none !important;
     }
 
-    /* Profile pill — icon only */
-    #top-toolbar .toolbar-group:nth-child(3) .toolbar-pill {
-        padding: 4px 6px !important;
-        height: 36px !important;
+    /* Profile — fixed to top right */
+    #profile-avatar {
+        position: fixed !important;
+        top: 12px !important;
+        right: 12px !important;
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 14px !important;
+        z-index: 2500 !important;
+        cursor: pointer;
     }
     #map-pill-name { display: none !important; }
 
-    /* Show hamburger button */
+    /* Show hamburger button on the left */
     #mobile-controls-btn {
         display: flex !important;
-        left: 8px !important;
+        left: 12px !important;
         transform: none !important;
     }
 
