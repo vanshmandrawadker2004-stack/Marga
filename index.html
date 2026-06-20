@@ -521,18 +521,30 @@
 
         <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.25);margin-bottom:20px;">Filters</p>
         <div style="margin-bottom:24px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <span style="font-size:13px;color:rgba(255,255,255,0.5);">Max Distance</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <label class="toggle-switch" style="transform:scale(0.85);">
+                        <input type="checkbox" id="mobile-toggle-distance" checked onchange="document.getElementById('toggle-distance').checked=this.checked; document.getElementById('toggle-distance').dispatchEvent(new Event('change')); document.getElementById('mobile-range-distance').style.opacity=this.checked?'1':'0.3';">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="font-size:13px;color:rgba(255,255,255,0.5);">Max Distance</span>
+                </div>
                 <span id="mobile-distance-val" style="font-size:13px;font-weight:600;color:#00e5ff;">100 km</span>
             </div>
-            <input type="range" min="10" max="200" value="100" id="mobile-range-distance" style="width:100%;" oninput="document.getElementById('range-distance').value=this.value; document.getElementById('distance-val').textContent=this.value+' km'; document.getElementById('mobile-distance-val').textContent=this.value+' km';">
+            <input type="range" min="10" max="200" value="100" id="mobile-range-distance" style="width:100%;" oninput="document.getElementById('range-distance').value=this.value; document.getElementById('distance-val').textContent=this.value+' km'; document.getElementById('mobile-distance-val').textContent=this.value+' km'; document.getElementById('range-distance').dispatchEvent(new Event('change'));">
         </div>
         <div style="margin-bottom:28px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <span style="font-size:13px;color:rgba(255,255,255,0.5);">Max Duration</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <label class="toggle-switch" style="transform:scale(0.85);">
+                        <input type="checkbox" id="mobile-toggle-duration" checked onchange="document.getElementById('toggle-duration').checked=this.checked; document.getElementById('toggle-duration').dispatchEvent(new Event('change')); document.getElementById('mobile-range-duration').style.opacity=this.checked?'1':'0.3';">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="font-size:13px;color:rgba(255,255,255,0.5);">Max Duration</span>
+                </div>
                 <span id="mobile-duration-val" style="font-size:13px;font-weight:600;color:#00e5ff;">2 hrs</span>
             </div>
-            <input type="range" min="0.5" max="10" step="0.5" value="2" id="mobile-range-duration" style="width:100%;" oninput="document.getElementById('range-duration').value=this.value; document.getElementById('duration-val').textContent=this.value+' hrs'; document.getElementById('mobile-duration-val').textContent=this.value+' hrs';">
+            <input type="range" min="0.5" max="10" step="0.5" value="2" id="mobile-range-duration" style="width:100%;" oninput="document.getElementById('range-duration').value=this.value; document.getElementById('duration-val').textContent=this.value+' hrs'; document.getElementById('mobile-duration-val').textContent=this.value+' hrs'; document.getElementById('range-duration').dispatchEvent(new Event('change'));">
         </div>
 
         <button onclick="window.closeMobileSheet();" style="width:100%;padding:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;color:rgba(255,255,255,0.35);font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.5px;">Done</button>

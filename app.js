@@ -1035,7 +1035,7 @@ async function loadTrailPhotos(gem) {
     // generator=geosearch returns File: pages within radius (metres); imageinfo
     // gives us a 400px-wide thumbnail URL for each. origin=* enables anon CORS.
     const endpoint = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*'
-        + '&generator=geosearch&ggsnamespace=6&ggsprimary=all&ggsradius=10000&ggslimit=20'
+        + '&generator=geosearch&ggsnamespace=6&ggsprimary=all&ggsradius=50000&ggslimit=30'
         + `&ggscoord=${lat}|${lng}`
         + '&prop=imageinfo&iiprop=url&iiurlwidth=400';
 
