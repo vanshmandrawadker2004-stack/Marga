@@ -424,7 +424,7 @@
 
                 <div class="dropdown-container">
                     <div class="icon-btn" style="padding-right: 4px;">
-                        <span style="font-size: 10px; font-weight: 800; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-right: 8px;">Radar</span>
+                        <span class="radar-label" style="font-size: 10px; font-weight: 800; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-right: 8px;">Radar</span>
                         <label class="toggle-switch" style="transform: scale(0.85); margin-top: 2px;">
                             <input type="checkbox" id="toggle-radar">
                             <span class="toggle-slider"></span>
@@ -483,6 +483,37 @@
         </div>
     </div>
 
+    <!-- Mobile-only controls bottom sheet -->
+    <div id="mobile-controls-btn" style="display:none; position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:2500; background:rgba(30,30,35,0.75); backdrop-filter:blur(24px); border:1px solid rgba(255,255,255,0.12); border-radius:20px; padding:8px 14px; cursor:pointer; align-items:center; gap:8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><circle cx="12" cy="5" r="1" fill="rgba(255,255,255,0.6)"/><circle cx="12" cy="12" r="1" fill="rgba(255,255,255,0.6)"/><circle cx="12" cy="19" r="1" fill="rgba(255,255,255,0.6)"/></svg>
+        <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;">More</span>
+    </div>
+
+    <div id="mobile-controls-sheet" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:6000; background:rgba(14,14,18,0.97); backdrop-filter:blur(24px); border-top:1px solid rgba(255,255,255,0.08); border-radius:24px 24px 0 0; padding:20px 24px 40px;">
+        <div style="width:36px;height:3px;background:rgba(255,255,255,0.15);border-radius:99px;margin:0 auto 24px;"></div>
+        <div style="display:flex;justify-content:space-around;align-items:center;margin-bottom:24px;">
+            <label style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;">
+                <div style="width:48px;height:48px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;display:flex;align-items:center;justify-content:center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                </div>
+                <span style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">Saved</span>
+            </label>
+            <label style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;" onclick="document.getElementById('toggle-radar').click(); document.getElementById('mobile-controls-sheet').style.display='none';">
+                <div style="width:48px;height:48px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;display:flex;align-items:center;justify-content:center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+                </div>
+                <span style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">Radar</span>
+            </label>
+            <label style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;">
+                <div style="width:48px;height:48px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;display:flex;align-items:center;justify-content:center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                </div>
+                <span style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">Filters</span>
+            </label>
+        </div>
+        <button onclick="document.getElementById('mobile-controls-sheet').style.display='none';" style="width:100%;padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:14px;color:rgba(255,255,255,0.4);font-size:13px;font-weight:600;cursor:pointer;">Close</button>
+    </div>
+
     <div id="map"></div>
 
     <!-- Result count: fades in with the markers, clears on a new search -->
@@ -496,6 +527,14 @@
         if (mobileMenuBtn && mobileMenu) {
             mobileMenuBtn.addEventListener('click', () => {
                 mobileMenu.style.display = mobileMenu.style.display === 'none' ? 'block' : 'none';
+            });
+        }
+
+        const mobileControlsBtn = document.getElementById('mobile-controls-btn');
+        const mobileControlsSheet = document.getElementById('mobile-controls-sheet');
+        if (mobileControlsBtn && mobileControlsSheet) {
+            mobileControlsBtn.addEventListener('click', () => {
+                mobileControlsSheet.style.display = mobileControlsSheet.style.display === 'none' ? 'block' : 'none';
             });
         }
 

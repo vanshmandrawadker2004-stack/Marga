@@ -625,10 +625,21 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
     }
 
     /* CRITICAL FIX: Hide text spans, but SPARE the toggle-slider span! */
-    .toolbar-pill span:not(.toggle-slider), 
-    .toolbar-pill p, 
-    .icon-btn span:not(.toggle-slider) {
-        display: none !important; 
+    .toolbar-pill span:not(.toggle-slider),
+    .toolbar-pill p,
+    .icon-btn span:not(.toggle-slider),
+    .radar-label {
+        display: none !important;
+    }
+
+    /* Hide middle toolbar group on mobile — too crowded */
+    #top-toolbar .toolbar-group:nth-child(2) {
+        display: none !important;
+    }
+
+    /* Show the mobile more button */
+    #mobile-controls-btn {
+        display: flex !important;
     }
 
     /* Shrink the SVGs/Icons down a notch */
