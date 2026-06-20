@@ -784,10 +784,12 @@ body.logged-in #auth-modal {
     overflow-x: auto;
     padding-bottom: 8px;
     margin-bottom: 4px;
-    padding-left: 8px; /* Dialed this down from 16px to shift it left */
-    scrollbar-width: none; 
-    -ms-overflow-style: none; 
-    -webkit-overflow-scrolling: touch; 
+    padding-left: 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    z-index: 4001;
 }
 
 .quick-search-chips::-webkit-scrollbar { 
@@ -798,15 +800,17 @@ body.logged-in #auth-modal {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #a0a0a5;
-    padding: 6px 14px; /* Reduced padding */
-    border-radius: 20px; /* Tighter curve */
-    font-size: 10px; /* Smaller, cleaner text */
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
     white-space: nowrap;
     cursor: pointer;
-    flex-shrink: 0; /* Prevents chips from squishing */
+    flex-shrink: 0;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -899,10 +903,10 @@ body.logged-in #auth-modal {
 /* --- RESULT COUNT LABEL --- */
 #result-count-label {
     position: fixed;
+    top: 20px;
     left: 50%;
-    bottom: 150px;                 /* sits just above the search chips */
     transform: translateX(-50%);
-    z-index: 3999;
+    z-index: 5001;
     font-family: 'JetBrains Mono', monospace;
     color: #00f0ff;
     font-size: 10px;
@@ -913,5 +917,9 @@ body.logged-in #auth-modal {
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.6s ease;
+    background: rgba(0, 229, 255, 0.06);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    border-radius: 20px;
+    padding: 6px 16px;
 }
 #result-count-label.visible { opacity: 1; }
