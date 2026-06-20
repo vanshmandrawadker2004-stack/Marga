@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1080px;
+    height: 1080px;
+    overflow: hidden;
+    background: #080a0e;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    background-size: 256px 256px;
+  }
+
+  .lines {
+    position: absolute;
+    inset: 0;
+    opacity: 0.025;
+    background-image: linear-gradient(rgba(255,255,255,1) 1px, transparent 1px);
+    background-size: 100% 80px;
+  }
+
+  .content {
+    position: absolute;
+    inset: 0;
+    padding: 80px 88px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+  }
+
+  .post-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.15);
+  }
+
+  .middle {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .query-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+    margin-bottom: 20px;
+  }
+
+  .query-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 4px;
+    padding: 32px 40px;
+    margin-bottom: 72px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .query-cursor {
+    width: 2px;
+    height: 36px;
+    background: #00e5ff;
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .query-text {
+    font-size: 28px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.55);
+    letter-spacing: 0.02em;
+  }
+
+  .headline {
+    font-size: 104px;
+    font-weight: 200;
+    line-height: 1.05;
+    letter-spacing: 0.04em;
+    color: #fff;
+  }
+
+  .headline .accent {
+    color: #00e5ff;
+  }
+
+  .rule {
+    width: 40px;
+    height: 1px;
+    background: rgba(0,229,255,0.6);
+    margin: 52px 0 44px;
+  }
+
+  .result-line {
+    display: flex;
+    align-items: baseline;
+    gap: 28px;
+  }
+
+  .result-count {
+    font-size: 80px;
+    font-weight: 200;
+    letter-spacing: 0.02em;
+    color: #00e5ff;
+    line-height: 1;
+  }
+
+  .result-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .result-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+  }
+
+  .result-sublabel {
+    font-size: 20px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.05em;
+  }
+
+  .bottom-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .brand-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.18);
+  }
+
+  .swipe {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.13);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .swipe-arrow { color: #00e5ff; font-size: 14px; opacity: 0.5; }
+</style>
+</head>
+<body>
+
+  <div class="grain"></div>
+  <div class="lines"></div>
+
+  <div class="content">
+    <div class="brand-row">
+      <div class="brand">Marga</div>
+      <div class="post-num">02 / 03</div>
+    </div>
+
+    <div class="middle">
+      <div class="query-label">— you type</div>
+      <div class="query-box">
+        <div class="query-cursor"></div>
+        <div class="query-text">"chill ghat ride, 2 hours from here"</div>
+      </div>
+
+      <div class="headline">
+        It just<br/>
+        <span class="accent">finds it.</span>
+      </div>
+
+      <div class="rule"></div>
+
+      <div class="result-line">
+        <div class="result-count">44</div>
+        <div class="result-meta">
+          <div class="result-label">places found</div>
+          <div class="result-sublabel">Sorted by your vibe</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-row">
+      <div class="brand-tag">No filters. No dropdowns.</div>
+      <div class="swipe">Swipe <span class="swipe-arrow">→</span></div>
+    </div>
+  </div>
+
+</body>
+</html>

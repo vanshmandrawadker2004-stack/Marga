@@ -1,0 +1,353 @@
+/*
+ * ═══════════════════════════════════════════════════════════
+ *  MARGA DESIGN SYSTEM — v1.1
+ *  Dark & Premium · Cyan Accent · Western Ghats × Tech
+ *  Typography: Clean tech premium — Inter light, wide tracking
+ * ═══════════════════════════════════════════════════════════
+ *
+ *  Usage: @import './marga-design-system.css';
+ *  All tokens are CSS custom properties on :root
+ * ═══════════════════════════════════════════════════════════
+ */
+
+/* ─────────────────────────────────────────────────────────
+   FONTS
+   Primary:   Inter          (UI, headings, body — light/regular)
+   Mono:      JetBrains Mono (labels, tags, metadata)
+───────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+
+  /* ─────────────────────────────────────────────────────
+     COLOR — BASE
+  ───────────────────────────────────────────────────── */
+  --color-bg-base:        #080a0e;   /* Page / app background */
+  --color-bg-elevated:    #0f1117;   /* Cards, panels */
+  --color-bg-overlay:     #13161e;   /* Modals, drawers */
+  --color-bg-subtle:      #1a1d26;   /* Hover states, dividers */
+
+  --color-border:         rgba(255, 255, 255, 0.07);
+  --color-border-strong:  rgba(255, 255, 255, 0.13);
+
+  /* ─────────────────────────────────────────────────────
+     COLOR — TEXT
+  ───────────────────────────────────────────────────── */
+  --color-text-primary:   #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.55);
+  --color-text-tertiary:  rgba(255, 255, 255, 0.28);
+  --color-text-disabled:  rgba(255, 255, 255, 0.14);
+
+  /* ─────────────────────────────────────────────────────
+     COLOR — ACCENT (Cyan)
+  ───────────────────────────────────────────────────── */
+  --color-accent:         #00e5ff;   /* Primary cyan */
+  --color-accent-dim:     rgba(0, 229, 255, 0.15);
+  --color-accent-glow:    rgba(0, 229, 255, 0.35);
+  --color-accent-subtle:  rgba(0, 229, 255, 0.07);
+
+  /* ─────────────────────────────────────────────────────
+     COLOR — SEMANTIC
+  ───────────────────────────────────────────────────── */
+  --color-success:        #22c55e;
+  --color-warning:        #f59e0b;
+  --color-error:          #ef4444;
+  --color-info:           #3b82f6;
+
+  /* ─────────────────────────────────────────────────────
+     TYPOGRAPHY — SCALE
+     Philosophy: light weight + generous spacing = premium
+     Base: 16px (1rem)
+  ───────────────────────────────────────────────────── */
+  --font-primary:   'Inter', sans-serif;
+  --font-mono:      'JetBrains Mono', monospace;
+
+  /* Display — hero headings (Inter light/thin) */
+  --text-display-2xl: 72px;   /* hero, cover */
+  --text-display-xl:  56px;   /* section headline */
+  --text-display-lg:  40px;   /* card title */
+  --text-display-md:  30px;   /* subheading */
+  --text-display-sm:  22px;   /* minor heading */
+
+  /* Body */
+  --text-body-xl:     18px;   /* lead text */
+  --text-body-lg:     16px;   /* large body */
+  --text-body-md:     15px;   /* base */
+  --text-body-sm:     13px;   /* small */
+  --text-body-xs:     12px;   /* fine print */
+
+  /* Label / mono (UI metadata) */
+  --text-label-lg:    12px;
+  --text-label-md:    11px;
+  --text-label-sm:    10px;
+
+  /* Weights — premium = restrained */
+  --fw-thin:     200;
+  --fw-light:    300;
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+
+  /* Line heights */
+  --lh-tight:   1.0;
+  --lh-snug:    1.2;
+  --lh-normal:  1.45;
+  --lh-relaxed: 1.65;
+  --lh-loose:   1.9;
+
+  /* Letter spacings — wide tracking is the premium signal */
+  --ls-tight:   -0.02em;
+  --ls-snug:    -0.01em;
+  --ls-normal:  0.01em;
+  --ls-wide:    0.06em;
+  --ls-wider:   0.12em;
+  --ls-widest:  0.22em;
+
+  /* ─────────────────────────────────────────────────────
+     SPACING — 4px base grid
+  ───────────────────────────────────────────────────── */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-16:  64px;
+  --space-20:  80px;
+  --space-24:  96px;
+  --space-32: 128px;
+
+  /* ─────────────────────────────────────────────────────
+     BORDER RADIUS
+  ───────────────────────────────────────────────────── */
+  --radius-sm:   6px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+  --radius-xl:   32px;
+  --radius-pill: 999px;
+
+  /* ─────────────────────────────────────────────────────
+     SHADOWS / GLOWS
+  ───────────────────────────────────────────────────── */
+  --shadow-sm:    0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md:    0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg:    0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-xl:    0 16px 56px rgba(0, 0, 0, 0.7);
+
+  --glow-accent-sm: 0 0 10px var(--color-accent-glow);
+  --glow-accent-md: 0 0 20px var(--color-accent-glow), 0 0 40px rgba(0, 229, 255, 0.15);
+  --glow-accent-lg: 0 0 30px var(--color-accent-glow), 0 0 80px rgba(0, 229, 255, 0.12);
+
+  /* ─────────────────────────────────────────────────────
+     TRANSITIONS
+  ───────────────────────────────────────────────────── */
+  --transition-fast:   150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow:   400ms ease;
+
+  /* ─────────────────────────────────────────────────────
+     Z-INDEX SCALE
+  ───────────────────────────────────────────────────── */
+  --z-base:    0;
+  --z-above:   10;
+  --z-sticky:  100;
+  --z-overlay: 200;
+  --z-modal:   300;
+  --z-toast:   400;
+}
+
+/* ─────────────────────────────────────────────────────────
+   RESET & BASE
+───────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-primary);
+  font-size: var(--text-body-md);
+  font-weight: var(--fw-light);
+  line-height: var(--lh-normal);
+  color: var(--color-text-primary);
+  background: var(--color-bg-base);
+  letter-spacing: var(--ls-normal);
+}
+
+/* ─────────────────────────────────────────────────────────
+   TYPOGRAPHY UTILITIES
+   Rule: lighter weight + wider tracking = premium feel
+───────────────────────────────────────────────────────── */
+
+/* Display headings — thin/light, generous tracking */
+.text-display-2xl { font-size: var(--text-display-2xl); font-weight: var(--fw-thin);    line-height: var(--lh-tight);   letter-spacing: var(--ls-wide); }
+.text-display-xl  { font-size: var(--text-display-xl);  font-weight: var(--fw-light);   line-height: var(--lh-tight);   letter-spacing: var(--ls-wide); }
+.text-display-lg  { font-size: var(--text-display-lg);  font-weight: var(--fw-light);   line-height: var(--lh-snug);    letter-spacing: var(--ls-wider); }
+.text-display-md  { font-size: var(--text-display-md);  font-weight: var(--fw-regular); line-height: var(--lh-snug);    letter-spacing: var(--ls-wide); }
+.text-display-sm  { font-size: var(--text-display-sm);  font-weight: var(--fw-regular); line-height: var(--lh-normal);  letter-spacing: var(--ls-wide); }
+
+/* Body */
+.text-xl   { font-size: var(--text-body-xl); font-weight: var(--fw-light);   line-height: var(--lh-relaxed); letter-spacing: var(--ls-normal); }
+.text-lg   { font-size: var(--text-body-lg); font-weight: var(--fw-light);   line-height: var(--lh-relaxed); letter-spacing: var(--ls-normal); }
+.text-md   { font-size: var(--text-body-md); font-weight: var(--fw-light);   line-height: var(--lh-normal);  letter-spacing: var(--ls-normal); }
+.text-sm   { font-size: var(--text-body-sm); font-weight: var(--fw-regular); line-height: var(--lh-normal);  letter-spacing: var(--ls-normal); }
+.text-xs   { font-size: var(--text-body-xs); font-weight: var(--fw-regular); line-height: var(--lh-normal);  letter-spacing: var(--ls-normal); }
+
+/* Labels (mono) — narrow, widely tracked, uppercase */
+.label-lg  { font-family: var(--font-mono); font-size: var(--text-label-lg); font-weight: var(--fw-regular); letter-spacing: var(--ls-widest); text-transform: uppercase; }
+.label-md  { font-family: var(--font-mono); font-size: var(--text-label-md); font-weight: var(--fw-regular); letter-spacing: var(--ls-widest); text-transform: uppercase; }
+.label-sm  { font-family: var(--font-mono); font-size: var(--text-label-sm); font-weight: var(--fw-regular); letter-spacing: var(--ls-wider);  text-transform: uppercase; }
+
+/* Color utilities */
+.text-primary   { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary  { color: var(--color-text-tertiary); }
+.text-accent    { color: var(--color-accent); }
+
+/* ─────────────────────────────────────────────────────────
+   COMPONENTS
+───────────────────────────────────────────────────────── */
+
+/* Card */
+.card {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  transition: border-color var(--transition-normal);
+}
+.card:hover { border-color: var(--color-border-strong); }
+
+/* Badge / chip */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: var(--text-label-md);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+.badge--accent {
+  background: var(--color-accent-subtle);
+  border-color: rgba(0, 229, 255, 0.2);
+  color: var(--color-accent);
+}
+
+/* Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-primary);
+  font-size: var(--text-body-sm);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--ls-wider);
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+.btn--primary {
+  background: var(--color-accent);
+  color: #000;
+}
+.btn--primary:hover {
+  box-shadow: var(--glow-accent-sm);
+  filter: brightness(1.1);
+}
+.btn--ghost {
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-primary);
+}
+.btn--ghost:hover {
+  background: var(--color-bg-subtle);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* Input / Search bar */
+.input {
+  width: 100%;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: var(--space-4) var(--space-6);
+  font-family: var(--font-primary);
+  font-size: var(--text-body-md);
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.input::placeholder { color: var(--color-text-tertiary); }
+.input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-dim);
+}
+
+/* Pin / dot (for map) */
+.map-pin {
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: var(--glow-accent-sm);
+}
+.map-pin--large {
+  box-shadow: var(--glow-accent-md);
+}
+
+/* Divider */
+.divider {
+  width: 100%;
+  height: 1px;
+  background: var(--color-border);
+}
+.divider--vertical {
+  width: 1px;
+  height: 100%;
+  background: var(--color-border);
+}
+
+/* Tag pill (category) */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: var(--text-label-sm);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.tag:hover, .tag--active {
+  background: var(--color-accent-subtle);
+  border-color: rgba(0, 229, 255, 0.25);
+  color: var(--color-accent);
+}

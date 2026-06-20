@@ -4,7 +4,7 @@ const { GoogleGenAI } = require("@google/genai");
 
 const app = express();
 app.use(express.json());
-app.use(express.static('.')); // Serves frontend files
+app.use(express.static(__dirname)); // Serves frontend files
 
 const ai = new GoogleGenAI({});
 

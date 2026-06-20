@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* Each slide is 1080x1080 */
+  body {
+    width: 1080px;
+    font-family: 'Inter', sans-serif;
+    background: #080a0e;
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .slide {
+    width: 1080px;
+    height: 1080px;
+    position: relative;
+    overflow: hidden;
+    background: #080a0e;
+    page-break-after: always;
+  }
+
+  .grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    background-size: 256px 256px;
+  }
+
+  .lines {
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: linear-gradient(rgba(255,255,255,1) 1px, transparent 1px);
+    background-size: 100% 72px;
+  }
+
+  .content {
+    position: absolute;
+    inset: 0;
+    padding: 80px 88px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+  }
+
+  .post-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.15);
+  }
+
+  .middle {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    margin-bottom: 36px;
+  }
+
+  .headline {
+    font-size: 108px;
+    font-weight: 200;
+    line-height: 1.05;
+    letter-spacing: 0.04em;
+    color: #fff;
+  }
+
+  .headline .accent { color: #00e5ff; }
+
+  .rule {
+    width: 40px;
+    height: 1px;
+    background: rgba(0,229,255,0.6);
+    margin: 52px 0 44px;
+  }
+
+  .body-text {
+    font-size: 20px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.38);
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+    max-width: 680px;
+  }
+
+  .bottom-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .brand-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.18);
+  }
+
+  /* ---- SLIDE 2: SOLAR ---- */
+  .solar-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 56px;
+  }
+
+  .solar-cell {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 44px 44px 40px;
+    border-radius: 4px;
+  }
+
+  .solar-cell.highlight {
+    background: rgba(0,229,255,0.03);
+    border-color: rgba(0,229,255,0.15);
+  }
+
+  .solar-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+    margin-bottom: 20px;
+  }
+
+  .solar-time {
+    font-size: 72px;
+    font-weight: 200;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .solar-leave {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #00e5ff;
+  }
+
+  /* ---- SLIDE 3: Trail card ---- */
+  .trail-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: #00e5ff;
+    margin-bottom: 20px;
+  }
+
+  .trail-name {
+    font-size: 88px;
+    font-weight: 200;
+    line-height: 1.05;
+    letter-spacing: 0.04em;
+    color: #fff;
+    margin-bottom: 56px;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 0;
+    margin-bottom: 56px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 40px 0;
+  }
+
+  .stat {
+    flex: 1;
+    padding-right: 40px;
+  }
+
+  .stat + .stat {
+    border-left: 1px solid rgba(255,255,255,0.06);
+    padding-left: 40px;
+    padding-right: 0;
+  }
+
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.2);
+    margin-bottom: 14px;
+  }
+
+  .stat-value {
+    font-size: 60px;
+    font-weight: 200;
+    letter-spacing: 0.03em;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .trail-intel {
+    font-size: 20px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.35);
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+    max-width: 780px;
+  }
+</style>
+</head>
+<body>
+
+<!-- =================== SLIDE 1: Solar Intelligence =================== -->
+<div class="slide">
+  <div class="grain"></div>
+  <div class="lines"></div>
+
+  <div class="content">
+    <div class="brand-row">
+      <div class="brand">Marga</div>
+      <div class="post-num">01 / 03</div>
+    </div>
+
+    <div class="middle">
+      <div class="eyebrow" style="color:rgba(255,255,255,0.25);">— solar intelligence</div>
+      <div class="headline">
+        Know<br/>
+        when<br/>
+        to <span class="accent">leave.</span>
+      </div>
+      <div class="rule"></div>
+      <div class="body-text">Marga calculates sunrise & sunset at every trail — and tells you the exact time to depart from where you are.</div>
+    </div>
+
+    <div class="bottom-row">
+      <div class="brand-tag">Swipe to see it in action →</div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== SLIDE 2: Solar Times =================== -->
+<div class="slide">
+  <div class="grain"></div>
+  <div class="lines"></div>
+
+  <div class="content">
+    <div class="brand-row">
+      <div class="brand">Marga</div>
+      <div class="post-num">02 / 03</div>
+    </div>
+
+    <div class="middle">
+      <div class="eyebrow" style="color:rgba(255,255,255,0.25);margin-bottom:40px;">— Madhe Ghat · Pune, MH</div>
+
+      <div class="solar-grid">
+        <div class="solar-cell highlight">
+          <div class="solar-label">Sunrise</div>
+          <div class="solar-time">06:01</div>
+          <div class="solar-leave">Leave by 03:09 AM</div>
+        </div>
+        <div class="solar-cell">
+          <div class="solar-label">Sunset</div>
+          <div class="solar-time">07:14</div>
+          <div class="solar-leave">Leave by 04:22 PM</div>
+        </div>
+      </div>
+
+      <div class="headline" style="font-size:88px;">
+        Never miss<br/>
+        the <span class="accent">golden hour.</span>
+      </div>
+    </div>
+
+    <div class="bottom-row">
+      <div class="brand-tag">Updated daily · real-time location</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.15);">Swipe →</div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== SLIDE 3: Trail Card =================== -->
+<div class="slide">
+  <div class="grain"></div>
+  <div class="lines"></div>
+
+  <div class="content">
+    <div class="brand-row">
+      <div class="brand">Marga</div>
+      <div class="post-num">03 / 03</div>
+    </div>
+
+    <div class="middle">
+      <div class="trail-eyebrow">Off-Road · Western Ghats</div>
+      <div class="trail-name">Madhe Ghat<br/>Cliffside.</div>
+
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-label">Distance</div>
+          <div class="stat-value">79 km</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Duration</div>
+          <div class="stat-value">2h 52m</div>
+        </div>
+      </div>
+
+      <div class="trail-intel">Steep gravel fire roads, remote tribal belts, ending at a vertical cliff edge overlooking the Konkan plains.</div>
+    </div>
+
+    <div class="bottom-row">
+      <div class="brand-tag">marga.app · coming soon</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

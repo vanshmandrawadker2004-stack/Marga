@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Marga Design System — v1.2 Extended</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@200;300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Kannada:wght@300;400;500&display=swap" rel="stylesheet" />
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   MARGA DESIGN SYSTEM — v1.2
+   Dark & Premium · Cyan + Warm Amber Accent
+   Western Ghats × Tech × Editorial Campaign
+   ─────────────────────────────────────────────────────────
+   Base:      v1.1 (dark premium, cyan, Inter light)
+   Extended:  Editorial Campaign Layer from Instagram posts
+              · Warm amber accent
+              · Barlow Condensed for poster headings
+              · Vertical text · Grain overlay · Date stamps
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── FONT IMPORTS ── */
+/* Inter (UI/body) + JetBrains Mono (labels) + Barlow Condensed (editorial) */
+
+:root {
+  /* ─────────────────────────────────────────────
+     COLOR — BASE (unchanged from v1.1)
+  ───────────────────────────────────────────── */
+  --color-bg-base:        #080a0e;
+  --color-bg-elevated:    #0f1117;
+  --color-bg-overlay:     #13161e;
+  --color-bg-subtle:      #1a1d26;
+
+  --color-border:         rgba(255,255,255,0.07);
+  --color-border-strong:  rgba(255,255,255,0.13);
+
+  /* ─────────────────────────────────────────────
+     COLOR — TEXT (unchanged from v1.1)
+  ───────────────────────────────────────────── */
+  --color-text-primary:   #ffffff;
+  --color-text-secondary: rgba(255,255,255,0.55);
+  --color-text-tertiary:  rgba(255,255,255,0.28);
+  --color-text-disabled:  rgba(255,255,255,0.14);
+
+  /* ─────────────────────────────────────────────
+     COLOR — ACCENT CYAN (unchanged from v1.1)
+  ───────────────────────────────────────────── */
+  --color-accent:         #00e5ff;
+  --color-accent-dim:     rgba(0,229,255,0.15);
+  --color-accent-glow:    rgba(0,229,255,0.35);
+  --color-accent-subtle:  rgba(0,229,255,0.07);
+
+  /* ─────────────────────────────────────────────
+     COLOR — WARM ACCENT (NEW — Editorial/Campaign)
+     Amber-gold extracted from Sunset Journey poster
+     Use for: campaign headings, event accents,
+              editorial poster text, warm CTAs
+  ───────────────────────────────────────────── */
+  --color-warm:           #E8AA14;   /* Amber gold — campaign primary */
+  --color-warm-deep:      #C48C00;   /* Deeper gold — pressed/hover    */
+  --color-warm-dim:       rgba(232,170,20,0.15);
+  --color-warm-glow:      rgba(232,170,20,0.35);
+  --color-warm-subtle:    rgba(232,170,20,0.07);
+
+  /* ─────────────────────────────────────────────
+     COLOR — SEMANTIC (unchanged from v1.1)
+  ───────────────────────────────────────────── */
+  --color-success:        #22c55e;
+  --color-warning:        #f59e0b;
+  --color-error:          #ef4444;
+  --color-info:           #3b82f6;
+
+  /* ─────────────────────────────────────────────
+     TYPOGRAPHY — FONTS
+  ───────────────────────────────────────────── */
+  --font-primary:     'Inter', sans-serif;
+  --font-mono:        'JetBrains Mono', monospace;
+  --font-editorial:   'Barlow Condensed', sans-serif; /* NEW — poster/campaign */
+  --font-scripture:   'Noto Sans Kannada', sans-serif; /* NEW — Kannada cultural voice */
+
+  /* ─────────────────────────────────────────────
+     TYPOGRAPHY — SCALE (unchanged from v1.1)
+  ───────────────────────────────────────────── */
+  --text-display-2xl: 72px;
+  --text-display-xl:  56px;
+  --text-display-lg:  40px;
+  --text-display-md:  30px;
+  --text-display-sm:  22px;
+  --text-body-xl:     18px;
+  --text-body-lg:     16px;
+  --text-body-md:     15px;
+  --text-body-sm:     13px;
+  --text-body-xs:     12px;
+  --text-label-lg:    12px;
+  --text-label-md:    11px;
+  --text-label-sm:    10px;
+
+  /* Editorial Scale (NEW — Barlow Condensed)
+     For campaign posters, event banners, Instagram content */
+  --text-editorial-hero:  120px;   /* Full-bleed vertical type    */
+  --text-editorial-xl:     88px;   /* Campaign headline           */
+  --text-editorial-lg:     64px;   /* Section poster heading      */
+  --text-editorial-md:     48px;   /* Card campaign title         */
+  --text-editorial-sm:     36px;   /* Sub-poster heading          */
+
+  /* ─────────────────────────────────────────────
+     WEIGHTS
+  ───────────────────────────────────────────── */
+  --fw-thin:     200;
+  --fw-light:    300;
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;  /* NEW — for editorial layer */
+  --fw-black:    900;  /* NEW — for poster hero text */
+
+  /* ─────────────────────────────────────────────
+     LINE HEIGHTS (unchanged from v1.1)
+  ───────────────────────────────────────────── */
+  --lh-tight:   1.0;
+  --lh-snug:    1.2;
+  --lh-normal:  1.45;
+  --lh-relaxed: 1.65;
+  --lh-loose:   1.9;
+
+  /* ─────────────────────────────────────────────
+     LETTER SPACINGS (unchanged from v1.1)
+  ───────────────────────────────────────────── */
+  --ls-tight:   -0.02em;
+  --ls-snug:    -0.01em;
+  --ls-normal:   0.01em;
+  --ls-wide:     0.06em;
+  --ls-wider:    0.12em;
+  --ls-widest:   0.22em;
+
+  /* ─────────────────────────────────────────────
+     SPACING — 4px base grid (unchanged from v1.1)
+  ───────────────────────────────────────────── */
+  --space-1:    4px;
+  --space-2:    8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-16:  64px;
+  --space-20:  80px;
+  --space-24:  96px;
+  --space-32: 128px;
+
+  /* ─────────────────────────────────────────────
+     BORDER RADIUS (unchanged from v1.1)
+  ───────────────────────────────────────────── */
+  --radius-sm:   6px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+  --radius-xl:   32px;
+  --radius-pill: 999px;
+
+  /* ─────────────────────────────────────────────
+     SHADOWS / GLOWS (unchanged from v1.1 + warm additions)
+  ───────────────────────────────────────────── */
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,0.6);
+  --shadow-xl:    0 16px 56px rgba(0,0,0,0.7);
+
+  --glow-accent-sm: 0 0 10px var(--color-accent-glow);
+  --glow-accent-md: 0 0 20px var(--color-accent-glow), 0 0 40px rgba(0,229,255,0.15);
+  --glow-accent-lg: 0 0 30px var(--color-accent-glow), 0 0 80px rgba(0,229,255,0.12);
+
+  /* NEW — warm glows for editorial/event use */
+  --glow-warm-sm:  0 0 10px var(--color-warm-glow);
+  --glow-warm-md:  0 0 20px var(--color-warm-glow), 0 0 40px rgba(232,170,20,0.15);
+  --glow-warm-lg:  0 0 30px var(--color-warm-glow), 0 0 80px rgba(232,170,20,0.12);
+
+  /* ─────────────────────────────────────────────
+     TRANSITIONS (unchanged from v1.1)
+  ───────────────────────────────────────────── */
+  --transition-fast:   150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow:   400ms ease;
+
+  /* ─────────────────────────────────────────────
+     Z-INDEX SCALE (unchanged from v1.1)
+  ───────────────────────────────────────────── */
+  --z-base:    0;
+  --z-above:   10;
+  --z-sticky:  100;
+  --z-overlay: 200;
+  --z-modal:   300;
+  --z-toast:   400;
+
+  /* ─────────────────────────────────────────────
+     GRAIN / TEXTURE (NEW — editorial layer)
+     Apply via .grain overlay class
+  ───────────────────────────────────────────── */
+  --grain-opacity: 0.035;
+}
+
+/* ───────────────────────────────────────
+   RESET & BASE
+─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-primary);
+  font-size: var(--text-body-md);
+  font-weight: var(--fw-light);
+  line-height: var(--lh-normal);
+  color: var(--color-text-primary);
+  background: var(--color-bg-base);
+  letter-spacing: var(--ls-normal);
+}
+
+/* ───────────────────────────────────────
+   TYPOGRAPHY UTILITIES — v1.1 (preserved)
+─────────────────────────────────────── */
+.text-display-2xl { font-size: var(--text-display-2xl); font-weight: var(--fw-thin);    line-height: var(--lh-tight);   letter-spacing: var(--ls-wide); }
+.text-display-xl  { font-size: var(--text-display-xl);  font-weight: var(--fw-light);   line-height: var(--lh-tight);   letter-spacing: var(--ls-wide); }
+.text-display-lg  { font-size: var(--text-display-lg);  font-weight: var(--fw-light);   line-height: var(--lh-snug);    letter-spacing: var(--ls-wider); }
+.text-display-md  { font-size: var(--text-display-md);  font-weight: var(--fw-regular); line-height: var(--lh-snug);    letter-spacing: var(--ls-wide); }
+.text-display-sm  { font-size: var(--text-display-sm);  font-weight: var(--fw-regular); line-height: var(--lh-normal);  letter-spacing: var(--ls-wide); }
+.text-xl   { font-size: var(--text-body-xl); font-weight: var(--fw-light);   line-height: var(--lh-relaxed); letter-spacing: var(--ls-normal); }
+.text-lg   { font-size: var(--text-body-lg); font-weight: var(--fw-light);   line-height: var(--lh-relaxed); letter-spacing: var(--ls-normal); }
+.text-md   { font-size: var(--text-body-md); font-weight: var(--fw-light);   line-height: var(--lh-normal);  letter-spacing: var(--ls-normal); }
+.text-sm   { font-size: var(--text-body-sm); font-weight: var(--fw-regular); line-height: var(--lh-normal);  letter-spacing: var(--ls-normal); }
+.text-xs   { font-size: var(--text-body-xs); font-weight: var(--fw-regular); line-height: var(--lh-normal);  letter-spacing: var(--ls-normal); }
+.label-lg  { font-family: var(--font-mono); font-size: var(--text-label-lg); font-weight: var(--fw-regular); letter-spacing: var(--ls-widest); text-transform: uppercase; }
+.label-md  { font-family: var(--font-mono); font-size: var(--text-label-md); font-weight: var(--fw-regular); letter-spacing: var(--ls-widest); text-transform: uppercase; }
+.label-sm  { font-family: var(--font-mono); font-size: var(--text-label-sm); font-weight: var(--fw-regular); letter-spacing: var(--ls-wider);  text-transform: uppercase; }
+.text-primary   { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary  { color: var(--color-text-tertiary); }
+.text-accent    { color: var(--color-accent); }
+.text-warm      { color: var(--color-warm); } /* NEW */
+
+/* ───────────────────────────────────────
+   EDITORIAL TYPOGRAPHY — NEW (v1.2)
+   Barlow Condensed — campaign/poster layer
+   Philosophy: maximum visual weight, tight
+   leading, uppercase, warm amber or white
+─────────────────────────────────────── */
+.editorial-hero {
+  font-family: var(--font-editorial);
+  font-size: var(--text-editorial-hero);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.editorial-xl {
+  font-family: var(--font-editorial);
+  font-size: var(--text-editorial-xl);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+.editorial-lg {
+  font-family: var(--font-editorial);
+  font-size: var(--text-editorial-lg);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: 0em;
+  text-transform: uppercase;
+}
+.editorial-md {
+  font-family: var(--font-editorial);
+  font-size: var(--text-editorial-md);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.editorial-sm {
+  font-family: var(--font-editorial);
+  font-size: var(--text-editorial-sm);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Vertical text utility — for poster side-bar text */
+.text-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
+
+/* ───────────────────────────────────────
+   COMPONENTS — v1.1 (preserved)
+─────────────────────────────────────── */
+.card {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  transition: border-color var(--transition-normal);
+}
+.card:hover { border-color: var(--color-border-strong); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: var(--text-label-md);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+.badge--accent { background: var(--color-accent-subtle); border-color: rgba(0,229,255,0.2); color: var(--color-accent); }
+.badge--warm   { background: var(--color-warm-subtle);   border-color: rgba(232,170,20,0.2); color: var(--color-warm); } /* NEW */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-primary);
+  font-size: var(--text-body-sm);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--ls-wider);
+  text-transform: uppercase;
+  cursor: pointer; border: none;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  text-decoration: none;
+}
+.btn--primary { background: var(--color-accent); color: #000; }
+.btn--primary:hover { box-shadow: var(--glow-accent-sm); filter: brightness(1.1); }
+.btn--ghost { background: transparent; border: 1px solid var(--color-border-strong); color: var(--color-text-primary); }
+.btn--ghost:hover { background: var(--color-bg-subtle); border-color: var(--color-accent); color: var(--color-accent); }
+/* NEW — warm campaign CTA */
+.btn--warm { background: var(--color-warm); color: #000; }
+.btn--warm:hover { box-shadow: var(--glow-warm-sm); filter: brightness(1.1); }
+
+.input {
+  width: 100%;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: var(--space-4) var(--space-6);
+  font-family: var(--font-primary);
+  font-size: var(--text-body-md);
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.input::placeholder { color: var(--color-text-tertiary); }
+.input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-dim); }
+
+.tag {
+  display: inline-flex; align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: var(--text-label-sm);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.tag:hover, .tag--active { background: var(--color-accent-subtle); border-color: rgba(0,229,255,0.25); color: var(--color-accent); }
+
+.map-pin { border-radius: 50%; background: var(--color-accent); box-shadow: var(--glow-accent-sm); }
+.map-pin--large { box-shadow: var(--glow-accent-md); }
+
+.divider { width: 100%; height: 1px; background: var(--color-border); }
+.divider--vertical { width: 1px; height: 100%; background: var(--color-border); }
+
+/* ───────────────────────────────────────
+   COMPONENTS — EDITORIAL (NEW v1.2)
+─────────────────────────────────────── */
+
+/* Grain overlay — apply to any editorial container */
+.grain {
+  position: relative;
+  overflow: hidden;
+}
+.grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: var(--grain-opacity);
+  pointer-events: none;
+  z-index: 10;
+  mix-blend-mode: overlay;
+}
+
+/* Sunburst icon — SVG-based decorative motif */
+.sunburst {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  color: var(--color-warm);
+}
+
+/* Event Date Stamp */
+.date-stamp {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.date-stamp__day {
+  font-family: var(--font-editorial);
+  font-size: var(--text-editorial-sm);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-warm);
+}
+.date-stamp__date {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-lg);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--ls-widest);
+  color: var(--color-text-secondary);
+}
+
+/* Kannada scripture label — English heading + Kannada sub-label */
+.bilingual-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.bilingual-label__primary {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-md);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--ls-widest);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.bilingual-label__secondary {
+  font-family: var(--font-scripture);
+  font-size: var(--text-body-xs);
+  font-weight: var(--fw-light);
+  letter-spacing: 0.03em;
+  color: var(--color-text-tertiary);
+}
+
+/* Campaign / Instagram Post Card */
+.campaign-card {
+  position: relative;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  aspect-ratio: 4/5;
+  display: flex;
+  flex-direction: column;
+}
+.campaign-card__photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.45;
+}
+.campaign-card__photo--tinted {
+  background-color: #2a3545;
+}
+.campaign-card__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 1;
+  height: 100%;
+}
+.campaign-card__vertical-text {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--font-editorial);
+  font-size: clamp(48px, 12vw, 88px);
+  font-weight: var(--fw-black);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--color-warm);
+  padding: var(--space-6) var(--space-4);
+  flex-shrink: 0;
+}
+.campaign-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-6) var(--space-6) var(--space-6) 0;
+}
+.campaign-card__eyebrow {
+  font-family: var(--font-primary);
+  font-size: var(--text-body-sm);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--ls-wider);
+  color: var(--color-warm);
+}
+.campaign-card__title {
+  font-family: var(--font-editorial);
+  font-size: var(--text-editorial-md);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+  margin-top: var(--space-2);
+}
+.campaign-card__subtitle {
+  font-family: var(--font-primary);
+  font-size: var(--text-body-xs);
+  font-weight: var(--fw-light);
+  line-height: var(--lh-relaxed);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-3);
+  max-width: 200px;
+}
+.campaign-card__footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/* Poster Banner — full-width editorial strip */
+.poster-banner {
+  position: relative;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8) var(--space-10);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+.poster-banner__accent-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--color-warm);
+  box-shadow: var(--glow-warm-sm);
+}
+.poster-banner__label {
+  font-family: var(--font-editorial);
+  font-size: var(--text-editorial-lg);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--color-warm);
+  flex-shrink: 0;
+}
+.poster-banner__content { flex: 1; }
+.poster-banner__title {
+  font-size: var(--text-display-lg);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--ls-wide);
+  color: var(--color-text-primary);
+}
+.poster-banner__sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-md);
+  letter-spacing: var(--ls-widest);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-2);
+}
+
+/* ───────────────────────────────────────
+   DESIGN SYSTEM PAGE STYLES
+─────────────────────────────────────── */
+.ds-page { max-width: 1200px; margin: 0 auto; padding: var(--space-16) var(--space-8); }
+
+.ds-header {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-10);
+  margin-bottom: var(--space-16);
+}
+.ds-header__version {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-md);
+  letter-spacing: var(--ls-widest);
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: var(--space-4);
+}
+.ds-header__title {
+  font-family: var(--font-editorial);
+  font-size: 80px;
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.ds-header__title span { color: var(--color-warm); }
+.ds-header__desc {
+  font-size: var(--text-body-lg);
+  font-weight: var(--fw-light);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-4);
+  max-width: 560px;
+  line-height: var(--lh-relaxed);
+}
+.ds-header__tags { display: flex; gap: var(--space-3); margin-top: var(--space-6); flex-wrap: wrap; }
+
+.ds-section { margin-bottom: var(--space-20); }
+.ds-section__label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-md);
+  letter-spacing: var(--ls-widest);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--space-2);
+}
+.ds-section__title {
+  font-size: var(--text-display-md);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--ls-wide);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+.ds-new-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: var(--ls-widest);
+  text-transform: uppercase;
+  background: var(--color-warm-subtle);
+  border: 1px solid rgba(232,170,20,0.2);
+  color: var(--color-warm);
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  vertical-align: middle;
+  margin-left: var(--space-3);
+}
+
+/* Color grid */
+.color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--space-4); }
+.color-swatch {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+.color-swatch__block { height: 72px; }
+.color-swatch__info { padding: var(--space-3); background: var(--color-bg-elevated); }
+.color-swatch__name {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-sm);
+  letter-spacing: var(--ls-wider);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  display: block;
+}
+.color-swatch__hex {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-md);
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+  display: block;
+}
+.color-swatch__role {
+  font-size: var(--text-body-xs);
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+  display: block;
+  font-weight: var(--fw-light);
+}
+.color-section-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-sm);
+  letter-spacing: var(--ls-widest);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin: var(--space-6) 0 var(--space-3);
+}
+
+/* Typography table */
+.type-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-6);
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.type-row__meta {
+  width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.type-row__class { font-family: var(--font-mono); font-size: 11px; color: var(--color-accent); }
+.type-row__spec  { font-family: var(--font-mono); font-size: 10px; color: var(--color-text-tertiary); }
+.type-row__sample { flex: 1; }
+
+/* Component grid */
+.component-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); }
+.component-cell {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.component-cell__label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-sm);
+  letter-spacing: var(--ls-widest);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--space-2);
+}
+.flex-row { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.flex-col { display: flex; flex-direction: column; gap: var(--space-3); }
+
+/* Campaign preview grid */
+.campaign-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
+
+/* Photo placeholder */
+.photo-bg {
+  background: linear-gradient(160deg, #1e2a38 0%, #0d1520 50%, #151a10 100%);
+}
+.photo-bg--2 {
+  background: linear-gradient(160deg, #1e1428 0%, #0d0a20 50%, #15101a 100%);
+}
+
+/* Usage rules section */
+.usage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); }
+.usage-card {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+}
+.usage-card__label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label-sm);
+  letter-spacing: var(--ls-widest);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--space-4);
+}
+.usage-card ul { list-style: none; display: flex; flex-direction: column; gap: var(--space-3); }
+.usage-card li { display: flex; gap: var(--space-3); font-size: var(--text-body-sm); font-weight: var(--fw-light); color: var(--color-text-secondary); line-height: var(--lh-relaxed); }
+.usage-card li::before { content: '—'; color: var(--color-text-tertiary); flex-shrink: 0; }
+.usage-card li b { color: var(--color-text-primary); font-weight: var(--fw-medium); }
+
+/* Sunburst SVG */
+.sunburst-icon {
+  display: inline-block;
+  width: 36px; height: 36px;
+  color: var(--color-warm);
+}
+</style>
+</head>
+<body>
+
+<div class="ds-page">
+
+  <!-- ═══════════════════════ HEADER ═══════════════════════ -->
+  <header class="ds-header">
+    <div class="ds-header__version">Marga Design System — v1.2 Extended</div>
+    <h1 class="ds-header__title">MARGA<br><span>DESIGN</span></h1>
+    <p class="ds-header__desc">Dark & premium base meets editorial campaign layer. Cyan for tech precision. Warm amber for moments that move.</p>
+    <div class="ds-header__tags">
+      <span class="badge badge--accent">v1.1 Core Preserved</span>
+      <span class="badge badge--warm">Editorial Layer New</span>
+      <span class="badge">Western Ghats × Tech</span>
+      <span class="badge">ಕನ್ನಡ Scripture</span>
+      <span class="badge">Instagram Ready</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════ COLORS ═══════════════════════ -->
+  <section class="ds-section">
+    <div class="ds-section__label">01 — Foundation</div>
+    <h2 class="ds-section__title">Color System</h2>
+
+    <div class="color-section-label">Base — Unchanged</div>
+    <div class="color-grid">
+      <div class="color-swatch">
+        <div class="color-swatch__block" style="background:#080a0e"></div>
+        <div class="color-swatch__info">
+          <span class="color-swatch__name">bg-base</span>
+          <span class="color-swatch__hex">#080a0e</span>
+          <span class="color-swatch__role">Page background</span>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch__block" style="background:#0f1117"></div>
+        <div class="color-swatch__info">
+          <span class="color-swatch__name">bg-elevated</span>
+          <span class="color-swatch__hex">#0f1117</span>
+          <span class="color-swatch__role">Cards, panels</span>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch__block" style="background:#13161e"></div>
+        <div class="color-swatch__info">
+          <span class="color-swatch__name">bg-overlay</span>
+          <span class="color-swatch__hex">#13161e</span>
+          <span class="color-swatch__role">Modals, drawers</span>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch__block" style="background:#1a1d26"></div>
+        <div class="color-swatch__info">
+          <span class="color-swatch__name">bg-subtle</span>
+          <span class="color-swatch__hex">#1a1d26</span>
+          <span class="color-swatch__role">Hover, dividers</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-section-label">Accent — Cyan (Primary)</div>
+    <div class="color-grid">
+      <div class="color-swatch">
+        <div class="color-swatch__block" style="background:#00e5ff;box-shadow:0 0 20px rgba(0,229,255,0.4)"></div>
+        <div class="color-swatch__info">
+          <span class="color-swatch__name">accent</span>
+          <span class="color-swatch__hex">#00e5ff</span>
+          <span class="color-swatch__role">UI accent, CTAs, active</span>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch__block" style="background:rgba(0,229,255,0.15)"></div>
+        <div class="color-swatch__info">
+          <span class="color-swatch__name">accent-dim</span>
+          <span class="color-swatch__hex">rgba(0,229,255,0.15)</span>
+          <span class="color-swatch__role">Focus ring, highlights</span>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch__block" style="background:rgba(0,229,255,0.07)"></div>
+        <div class="color-swatch__info">
+          <span class="color-swatch__name">accent-subtle</span>
+          <span class="color-swatch__hex">rgba(0,229,255,0.07)</span>
+          <span class="color-swatch__role">Badge/tag fills</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-section-label">Accent — Warm Amber <span class="ds-new-badge">New in v1.2</span></div>
+    <div class="color-grid">
+      <div class="color-swatch">
+        <div class="color-swatch__block" style="background:#E8AA14;box-shadow:0 0 20px rgba(232,170,20,0.4)"></div>
+        <div class="color-swatch__info">
+          <span class="color-swatch__name">warm</span>
+          <span class="color-swatch__hex">#E8AA14</span>
+          <span class="color-swatch__role">Campaign, editorial, events</span>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch__block" style="background:#C48C00"></div>
+        <div class="color-swatch__info">
+          <span class="color-swatch__name">warm-deep</span>
+          <span class="color-swatch__hex">#C48C00</span>
+          <span class="color-swatch__role">Pressed/hover state</span>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch__block" style="background:rgba(232,170,20,0.15)"></div>
+        <div class="color-swatch__info">
+          <span class="color-swatch__name">warm-dim</span>
+          <span class="color-swatch__hex">rgba(232,170,20,0.15)</span>
+          <span class="color-swatch__role">Focus ring, warm highlights</span>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch__block" style="background:rgba(232,170,20,0.07)"></div>
+        <div class="color-swatch__info">
+          <span class="color-swatch__name">warm-subtle</span>
+          <span class="color-swatch__hex">rgba(232,170,20,0.07)</span>
+          <span class="color-swatch__role">Event badge fills</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ TYPOGRAPHY ═══════════════════════ -->
+  <section class="ds-section">
+    <div class="ds-section__label">02 — Typography</div>
+    <h2 class="ds-section__title">Type System</h2>
+
+    <div class="color-section-label">Inter — UI & Body (Unchanged)</div>
+    <div class="type-row">
+      <div class="type-row__meta">
+        <span class="type-row__class">.text-display-2xl</span>
+        <span class="type-row__spec">72px · thin 200 · tight</span>
+      </div>
+      <div class="type-row__sample text-display-2xl" style="overflow:hidden">Marga</div>
+    </div>
+    <div class="type-row">
+      <div class="type-row__meta">
+        <span class="type-row__class">.text-display-xl</span>
+        <span class="type-row__spec">56px · light 300 · tight</span>
+      </div>
+      <div class="type-row__sample text-display-xl">Western Ghats</div>
+    </div>
+    <div class="type-row">
+      <div class="type-row__meta">
+        <span class="type-row__class">.text-display-lg</span>
+        <span class="type-row__spec">40px · light 300 · snug</span>
+      </div>
+      <div class="type-row__sample text-display-lg">Premium Rides</div>
+    </div>
+    <div class="type-row">
+      <div class="type-row__meta">
+        <span class="type-row__class">.text-xl / .label-lg</span>
+        <span class="type-row__spec">18px body · 12px mono label</span>
+      </div>
+      <div class="type-row__sample" style="display:flex;flex-direction:column;gap:8px">
+        <span class="text-xl">Discover routes that move you.</span>
+        <span class="label-lg text-tertiary">Station · Distance · Duration</span>
+      </div>
+    </div>
+
+    <div class="color-section-label" style="margin-top:var(--space-10)">Barlow Condensed — Editorial / Campaign <span class="ds-new-badge">New in v1.2</span></div>
+    <div style="background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-6);margin-bottom:var(--space-4)">
+      <p class="text-xs text-tertiary" style="margin-bottom:var(--space-4);font-family:var(--font-mono);letter-spacing:var(--ls-widest);text-transform:uppercase;">Use ONLY for poster headings, campaign banners, Instagram content. Never for UI labels or body copy.</p>
+      <div class="type-row" style="border-color:rgba(255,255,255,0.05)">
+        <div class="type-row__meta">
+          <span class="type-row__class">.editorial-hero</span>
+          <span class="type-row__spec">120px · black 900 · tight</span>
+        </div>
+        <div class="type-row__sample editorial-hero text-warm" style="font-size:72px;overflow:hidden">SUNSET</div>
+      </div>
+      <div class="type-row" style="border-color:rgba(255,255,255,0.05)">
+        <div class="type-row__meta">
+          <span class="type-row__class">.editorial-xl</span>
+          <span class="type-row__spec">88px · black 900 · tight</span>
+        </div>
+        <div class="type-row__sample editorial-xl" style="font-size:60px;overflow:hidden">JOURNEY</div>
+      </div>
+      <div class="type-row" style="border-color:rgba(255,255,255,0.05)">
+        <div class="type-row__meta">
+          <span class="type-row__class">.editorial-lg</span>
+          <span class="type-row__spec">64px · bold 700 · tight</span>
+        </div>
+        <div class="type-row__sample editorial-lg text-warm">SATURDAY</div>
+      </div>
+      <div class="type-row" style="border-color:rgba(255,255,255,0.05)">
+        <div class="type-row__meta">
+          <span class="type-row__class">.editorial-md</span>
+          <span class="type-row__spec">48px · bold 700 · snug</span>
+        </div>
+        <div class="type-row__sample editorial-md">Ride. Explore. Repeat.</div>
+      </div>
+      <div class="type-row" style="border-color:transparent">
+        <div class="type-row__meta">
+          <span class="type-row__class">.editorial-sm</span>
+          <span class="type-row__spec">36px · bold 700 · snug</span>
+        </div>
+        <div class="type-row__sample editorial-sm text-secondary" style="display:flex;flex-direction:column;gap:4px">
+          <span>Sunset Journey</span>
+          <span style="font-family:var(--font-scripture);font-weight:300;font-size:24px;letter-spacing:0.03em;color:var(--color-text-tertiary)">ಸಂಜೆಯ ಪ್ರಯಾಣ</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ COMPONENTS v1.1 ═══════════════════════ -->
+  <section class="ds-section">
+    <div class="ds-section__label">03 — Components</div>
+    <h2 class="ds-section__title">Core UI Components</h2>
+
+    <div class="component-grid">
+      <div class="component-cell">
+        <div class="component-cell__label">Buttons</div>
+        <div class="flex-row">
+          <button class="btn btn--primary">Book Ride</button>
+          <button class="btn btn--ghost">Explore</button>
+          <button class="btn btn--warm">Join Event</button>
+        </div>
+      </div>
+      <div class="component-cell">
+        <div class="component-cell__label">Badges</div>
+        <div class="flex-row">
+          <span class="badge">Available</span>
+          <span class="badge badge--accent">Live</span>
+          <span class="badge badge--warm">Event</span>
+        </div>
+      </div>
+      <div class="component-cell">
+        <div class="component-cell__label">Tags / Filters</div>
+        <div class="flex-row">
+          <span class="tag tag--active">All Routes</span>
+          <span class="tag">Mountain</span>
+          <span class="tag">Coastal</span>
+          <span class="tag">Urban</span>
+        </div>
+      </div>
+      <div class="component-cell">
+        <div class="component-cell__label">Search Input</div>
+        <input class="input" placeholder="Search routes, events…" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ EDITORIAL COMPONENTS ═══════════════════════ -->
+  <section class="ds-section">
+    <div class="ds-section__label">04 — Editorial Layer <span class="ds-new-badge">New in v1.2</span></div>
+    <h2 class="ds-section__title">Campaign & Instagram Components</h2>
+
+    <!-- Poster Banner -->
+    <div class="color-section-label">Poster Banner</div>
+    <div class="poster-banner grain" style="margin-bottom:var(--space-6)">
+      <div class="poster-banner__accent-bar"></div>
+      <div class="poster-banner__label">Sunset<br>Journey</div>
+      <div class="divider--vertical" style="height:80px;margin-left:var(--space-4)"></div>
+      <div class="poster-banner__content" style="margin-left:var(--space-4)">
+        <div class="poster-banner__title">ಸಂಜೆಯ ಪ್ರಯಾಣ</div>
+        <div class="poster-banner__sub" style="font-family:var(--font-scripture);font-weight:300;letter-spacing:0.04em">ಪ್ರತಿ ಸವಾರಿ ಹೊಸ ದಿಗಂತದಿಂದ ಆರಂಭವಾಗುವ ಸ್ಥಳ</div>
+      </div>
+      <div class="date-stamp" style="text-align:right;flex-shrink:0">
+        <div class="date-stamp__day">Satur-<br>day</div>
+        <div class="date-stamp__date">09.28.2024</div>
+      </div>
+    </div>
+
+    <!-- Bilingual Label + Sunburst + Date Stamp -->
+    <div class="color-section-label">Editorial Atoms</div>
+    <div class="component-grid" style="margin-bottom:var(--space-6)">
+      <div class="component-cell">
+        <div class="component-cell__label">Kannada Scripture Label</div>
+        <div class="bilingual-label">
+          <span class="bilingual-label__primary">Sunset Journey</span>
+          <span class="bilingual-label__secondary">ಸಂಜೆಯ ಪ್ರಯಾಣ — ಪ್ರತಿ ಸವಾರಿ ಹೊಸ ದಿಗಂತದಿಂದ ಆರಂಭವಾಗುವ ಸ್ಥಳ</span>
+        </div>
+        <div style="margin-top:var(--space-4)"></div>
+        <div class="bilingual-label">
+          <span class="bilingual-label__primary">Western Ghats</span>
+          <span class="bilingual-label__secondary">ಪಶ್ಚಿಮ ಘಟ್ಟಗಳು — ಪರ್ವತದ ದಾರಿ</span>
+        </div>
+      </div>
+      <div class="component-cell">
+        <div class="component-cell__label">Date Stamp + Sunburst</div>
+        <div style="display:flex;align-items:center;gap:var(--space-6)">
+          <svg class="sunburst-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="5" fill="currentColor"/>
+            <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <line x1="20" y1="2" x2="20" y2="8"/>
+              <line x1="20" y1="32" x2="20" y2="38"/>
+              <line x1="2" y1="20" x2="8" y2="20"/>
+              <line x1="32" y1="20" x2="38" y2="20"/>
+              <line x1="6.1" y1="6.1" x2="10.3" y2="10.3"/>
+              <line x1="29.7" y1="29.7" x2="33.9" y2="33.9"/>
+              <line x1="33.9" y1="6.1" x2="29.7" y2="10.3"/>
+              <line x1="10.3" y1="29.7" x2="6.1" y2="33.9"/>
+              <line x1="13" y1="3.5" x2="14.5" y2="9.2"/>
+              <line x1="25.5" y1="30.8" x2="27" y2="36.5"/>
+              <line x1="36.5" y1="13" x2="30.8" y2="14.5"/>
+              <line x1="9.2" y1="25.5" x2="3.5" y2="27"/>
+              <line x1="3.5" y1="27" x2="9.2" y2="25.5"/>
+              <line x1="27" y1="3.5" x2="25.5" y2="9.2"/>
+              <line x1="36.5" y1="27" x2="30.8" y2="25.5"/>
+              <line x1="9.2" y1="14.5" x2="3.5" y2="13"/>
+            </g>
+          </svg>
+          <div class="date-stamp">
+            <div class="date-stamp__day">Satur-<br>day</div>
+            <div class="date-stamp__date">09.28.2024</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Campaign Cards — Instagram Post Style -->
+    <div class="color-section-label">Campaign Cards — Instagram Format (4:5)</div>
+    <div class="campaign-grid">
+
+      <!-- Card 1 — Sunset Journey -->
+      <div class="campaign-card grain">
+        <div class="campaign-card__photo photo-bg"></div>
+        <div class="campaign-card__content">
+          <div class="campaign-card__vertical-text">Sunset</div>
+          <div class="campaign-card__body">
+            <div>
+              <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-3)">
+                <svg width="20" height="20" viewBox="0 0 40 40" fill="none" style="color:var(--color-warm)">
+                  <circle cx="20" cy="20" r="5" fill="currentColor"/>
+                  <g stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                    <line x1="20" y1="2" x2="20" y2="8"/><line x1="20" y1="32" x2="20" y2="38"/>
+                    <line x1="2" y1="20" x2="8" y2="20"/><line x1="32" y1="20" x2="38" y2="20"/>
+                    <line x1="6.1" y1="6.1" x2="10.3" y2="10.3"/><line x1="29.7" y1="29.7" x2="33.9" y2="33.9"/>
+                    <line x1="33.9" y1="6.1" x2="29.7" y2="10.3"/><line x1="10.3" y1="29.7" x2="6.1" y2="33.9"/>
+                  </g>
+                </svg>
+                <span class="campaign-card__eyebrow">ಸಂಜೆಯ ಪ್ರಯಾಣ</span>
+              </div>
+              <h3 class="campaign-card__title">Journey</h3>
+              <p class="campaign-card__subtitle">ಪ್ರತಿ ಸವಾರಿ ಹೊಸ ದಿಗಂತದಿಂದ ಆರಂಭವಾಗುವ ಸ್ಥಳ</p>
+            </div>
+            <div class="campaign-card__footer">
+              <div class="date-stamp">
+                <div class="date-stamp__day" style="font-size:28px">Satur-<br>day</div>
+                <div class="date-stamp__date">09.28.2024</div>
+              </div>
+              <button class="btn btn--warm" style="padding:8px 16px;font-size:10px">Join</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2 — Cyan accent version -->
+      <div class="campaign-card grain">
+        <div class="campaign-card__photo photo-bg--2"></div>
+        <div class="campaign-card__content">
+          <div class="campaign-card__vertical-text" style="color:var(--color-accent)">Route</div>
+          <div class="campaign-card__body">
+            <div>
+              <div style="margin-bottom:var(--space-3)">
+                <span class="badge badge--accent">Live Tracking</span>
+              </div>
+              <h3 class="campaign-card__title" style="color:var(--color-accent)">Western<br>Ghats</h3>
+              <p class="campaign-card__subtitle">The most scenic mountain circuit. 280km. Starts Friday.</p>
+            </div>
+            <div class="campaign-card__footer">
+              <div>
+                <div class="label-md text-tertiary">Route Distance</div>
+                <div class="editorial-sm" style="color:var(--color-accent)">280 KM</div>
+              </div>
+              <button class="btn btn--primary" style="padding:8px 16px;font-size:10px">Ride</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3 — Minimal dark -->
+      <div class="campaign-card grain" style="background:var(--color-bg-base)">
+        <div class="campaign-card__content" style="flex-direction:column;justify-content:space-between;padding:var(--space-6)">
+          <div>
+            <span class="badge badge--warm">New Route</span>
+            <div class="editorial-xl text-warm" style="font-size:52px;margin-top:var(--space-4);line-height:1">COASTAL<br>CIRCUIT</div>
+            <p class="text-sm text-secondary" style="margin-top:var(--space-3);line-height:var(--lh-relaxed)">As the sun dips toward the horizon — painting the sky with hues of gold.</p>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end">
+            <div class="bilingual-label">
+              <span class="bilingual-label__primary">Marga Rides</span>
+              <span class="bilingual-label__secondary">ಮಾರ್ಗ — ದಾರಿಯಲ್ಲಿ ಓಡು</span>
+            </div>
+            <div class="divider--vertical" style="height:48px"></div>
+            <div class="date-stamp" style="text-align:right">
+              <div class="date-stamp__day" style="font-size:22px">SAT</div>
+              <div class="date-stamp__date">10.05.2024</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ USAGE RULES ═══════════════════════ -->
+  <section class="ds-section">
+    <div class="ds-section__label">05 — Rules</div>
+    <h2 class="ds-section__title">Usage Guidelines</h2>
+
+    <div class="usage-grid">
+      <div class="usage-card">
+        <div class="usage-card__label">Cyan — Tech & UI</div>
+        <ul>
+          <li><b>Active states</b> — selected tabs, focused inputs, map pins</li>
+          <li><b>Primary CTAs</b> — Book, Track, Start ride</li>
+          <li><b>Live data</b> — real-time indicators, online status</li>
+          <li><b>App interface</b> — navigation, icons, interactive elements</li>
+        </ul>
+      </div>
+      <div class="usage-card">
+        <div class="usage-card__label">Warm Amber — Campaign & Moments</div>
+        <ul>
+          <li><b>Event promotions</b> — Instagram posts, banners, posters</li>
+          <li><b>Editorial headings</b> — campaign titles only, never UI labels</li>
+          <li><b>Date stamps & sunbursts</b> — special event decorative elements</li>
+          <li><b>Warm CTAs</b> — Join Event, Register, RSVP</li>
+        </ul>
+      </div>
+      <div class="usage-card">
+        <div class="usage-card__label">Barlow Condensed — When to Use</div>
+        <ul>
+          <li><b>Instagram posts</b> — vertical type, campaign posters only</li>
+          <li><b>Event banners</b> — large-format printed or digital assets</li>
+          <li>Never mix with Inter at the same size level</li>
+          <li>Always uppercase, tight leading, weight 700–900 only</li>
+        </ul>
+      </div>
+      <div class="usage-card">
+        <div class="usage-card__label">Kannada Scripture — .bilingual-label</div>
+        <ul>
+          <li><b>Cultural voice</b> — Noto Sans Kannada renders the sub-label in script</li>
+          <li><b>Always paired</b> with an English primary label above it</li>
+          <li>Use for route names, event subtitles, brand moments — not UI microcopy</li>
+          <li>Weight 300 (light) only — never bold in the scripture layer</li>
+        </ul>
+      </div>
+      <div class="usage-card">
+        <div class="usage-card__label">Film Grain — .grain Class</div>
+        <ul>
+          <li>Add <b>.grain</b> class to any editorial container for texture</li>
+          <li>Always pair with a dark background or photo overlay</li>
+          <li>Never use on UI cards — editorial/campaign contexts only</li>
+          <li>Opacity is controlled via <b>--grain-opacity</b> (default 0.035)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ TOKEN REFERENCE ═══════════════════════ -->
+  <section class="ds-section">
+    <div class="ds-section__label">06 — Reference</div>
+    <h2 class="ds-section__title">New v1.2 Tokens</h2>
+    <div style="background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-8);font-family:var(--font-mono);font-size:13px;line-height:2;color:var(--color-text-secondary);overflow-x:auto">
+      <div style="color:var(--color-text-tertiary);margin-bottom:var(--space-4);letter-spacing:var(--ls-widest);font-size:10px;text-transform:uppercase">/* NEW TOKENS — add to :root in marga-design-system.css */</div>
+      <div><span style="color:var(--color-accent)">--color-warm</span>:           <span style="color:var(--color-warm)">#E8AA14</span>;</div>
+      <div><span style="color:var(--color-accent)">--color-warm-deep</span>:      <span style="color:var(--color-warm)">#C48C00</span>;</div>
+      <div><span style="color:var(--color-accent)">--color-warm-dim</span>:       rgba(232, 170, 20, 0.15);</div>
+      <div><span style="color:var(--color-accent)">--color-warm-glow</span>:      rgba(232, 170, 20, 0.35);</div>
+      <div><span style="color:var(--color-accent)">--color-warm-subtle</span>:    rgba(232, 170, 20, 0.07);</div>
+      <div style="margin-top:var(--space-4)"><span style="color:var(--color-accent)">--font-editorial</span>:       <span style="color:#a8d8a8">'Barlow Condensed', sans-serif</span>;</div>
+      <div><span style="color:var(--color-accent)">--font-scripture</span>:       <span style="color:#a8d8a8">'Noto Sans Kannada', sans-serif</span>;</div>
+      <div style="margin-top:var(--space-4)"><span style="color:var(--color-accent)">--text-editorial-hero</span>:  120px;</div>
+      <div><span style="color:var(--color-accent)">--text-editorial-xl</span>:    88px;</div>
+      <div><span style="color:var(--color-accent)">--text-editorial-lg</span>:    64px;</div>
+      <div><span style="color:var(--color-accent)">--text-editorial-md</span>:    48px;</div>
+      <div><span style="color:var(--color-accent)">--text-editorial-sm</span>:    36px;</div>
+      <div style="margin-top:var(--space-4)"><span style="color:var(--color-accent)">--fw-bold</span>:              700;</div>
+      <div><span style="color:var(--color-accent)">--fw-black</span>:             900;</div>
+      <div style="margin-top:var(--space-4)"><span style="color:var(--color-accent)">--glow-warm-sm</span>:         0 0 10px var(--color-warm-glow);</div>
+      <div><span style="color:var(--color-accent)">--glow-warm-md</span>:         0 0 20px var(--color-warm-glow), 0 0 40px rgba(232,170,20,0.15);</div>
+      <div><span style="color:var(--color-accent)">--glow-warm-lg</span>:         0 0 30px var(--color-warm-glow), 0 0 80px rgba(232,170,20,0.12);</div>
+      <div style="margin-top:var(--space-4)"><span style="color:var(--color-accent)">--grain-opacity</span>:        0.035;</div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="border-top:1px solid var(--color-border);padding-top:var(--space-10);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-4)">
+    <div>
+      <div class="label-sm text-tertiary">Marga Design System</div>
+      <div class="text-sm text-secondary" style="margin-top:var(--space-1)">v1.2 · Extended with Editorial Campaign Layer</div>
+    </div>
+    <div class="flex-row">
+      <span class="badge badge--accent">Cyan — Tech</span>
+      <span class="badge badge--warm">Amber — Campaign</span>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
