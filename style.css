@@ -631,11 +631,16 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
     }
     #map-pill-name { display: none !important; }
 
-    /* Show hamburger button on the left */
+    /* Show hamburger button on the left — map only */
     #mobile-controls-btn {
         display: flex !important;
         left: 12px !important;
         transform: none !important;
+    }
+    body.gateway-active #mobile-controls-btn,
+    body.gateway-active #mobile-sheet-backdrop,
+    body.gateway-active #mobile-controls-sheet {
+        display: none !important;
     }
 
     /* Keep the profile circle tight but scaled appropriately */
@@ -704,6 +709,11 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
     .photo-carousel img {
         width: 120px;
         height: 80px;
+    }
+    .photo-carousel {
+        -webkit-overflow-scrolling: touch !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
     }
 
     /* 4. MOBILE QUESTIONNAIRE OVERRIDES */
