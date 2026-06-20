@@ -706,14 +706,22 @@ body.logged-in #login-card { opacity: 0; pointer-events: none; transform: transl
         box-shadow: 0 -10px 20px #0d0e12; /* Fades the background behind it */
     }
 
-    .photo-carousel img {
-        width: 120px;
-        height: 80px;
-    }
     .photo-carousel {
-        -webkit-overflow-scrolling: touch !important;
+        height: 100px !important;
+        min-height: 100px !important;
         overflow-x: auto !important;
-        overflow-y: visible !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        display: flex !important;
+        align-items: stretch !important;
+        flex-shrink: 0 !important;
+    }
+    .photo-carousel img {
+        width: 140px !important;
+        height: 100px !important;
+        min-height: 100px !important;
+        object-fit: cover !important;
+        flex-shrink: 0 !important;
     }
 
     /* 4. MOBILE QUESTIONNAIRE OVERRIDES */
