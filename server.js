@@ -88,20 +88,33 @@ app.get('/api/route', async (req, res) => {
 
 // --- OVERPASS API PROXY ---
 // GET /api/overpass?query=...
-// Proxies OSM Overpass queries server-side to avoid browser rate-limits and CORS issues.
+// Tries multiple Overpass mirrors until one responds.
 app.get('/api/overpass', async (req, res) => {
-    try {
-        const { query } = req.query;
-        if (!query) return res.status(400).json({ error: 'Query required.' });
+    const { query } = req.query;
+    if (!query) return res.status(400).json({ error: 'Query required.' });
 
-        const overpassUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-        const opRes = await fetch(overpassUrl);
-        const data = await opRes.json();
-        res.status(opRes.ok ? 200 : opRes.status).json(data);
-    } catch (error) {
-        console.error('Overpass proxy error:', error);
-        res.status(502).json({ error: 'Failed to reach Overpass API.' });
+    const mirrors = [
+        'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+        'https://overpass.kumi.systems/api/interpreter',
+        'https://overpass-api.de/api/interpreter',
+    ];
+
+    for (const mirror of mirrors) {
+        try {
+            const controller = new AbortController();
+            const tid = setTimeout(() => controller.abort(), 8000);
+            const opRes = await fetch(`${mirror}?data=${encodeURIComponent(query)}`, { signal: controller.signal });
+            clearTimeout(tid);
+            if (opRes.ok) {
+                const data = await opRes.json();
+                return res.status(200).json(data);
+            }
+        } catch (err) {
+            console.log(`Overpass mirror ${mirror} failed: ${err.message}`);
+        }
     }
+
+    res.status(502).json({ error: 'All Overpass mirrors failed.' });
 });
 
 app.listen(3000, () => console.log('Marga running on http://localhost:3000'));
