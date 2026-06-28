@@ -86,4 +86,22 @@ app.get('/api/route', async (req, res) => {
     }
 });
 
+// --- OVERPASS API PROXY ---
+// GET /api/overpass?query=...
+// Proxies OSM Overpass queries server-side to avoid browser rate-limits and CORS issues.
+app.get('/api/overpass', async (req, res) => {
+    try {
+        const { query } = req.query;
+        if (!query) return res.status(400).json({ error: 'Query required.' });
+
+        const overpassUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+        const opRes = await fetch(overpassUrl);
+        const data = await opRes.json();
+        res.status(opRes.ok ? 200 : opRes.status).json(data);
+    } catch (error) {
+        console.error('Overpass proxy error:', error);
+        res.status(502).json({ error: 'Failed to reach Overpass API.' });
+    }
+});
+
 app.listen(3000, () => console.log('Marga running on http://localhost:3000'));
