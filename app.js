@@ -1309,7 +1309,16 @@ const utilityLayers = { 'toggle-petrol': L.layerGroup().addTo(map), 'toggle-food
 document.querySelectorAll('.utility-toggle').forEach(toggle => {
     toggle.addEventListener('change', (e) => {
         const toggleId = e.target.id;
-        if (!e.target.checked) return utilityLayers[toggleId].clearLayers();
+        const label = e.target.closest('label');
+
+        if (!e.target.checked) {
+            utilityLayers[toggleId].clearLayers();
+            if (label) label.style.opacity = '';
+            return;
+        }
+
+        // Show loading pulse on the icon
+        if (label) label.style.opacity = '0.4';
 
         const bounds = map.getBounds();
         const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
@@ -1319,24 +1328,41 @@ document.querySelectorAll('.utility-toggle').forEach(toggle => {
         else if (toggleId === 'toggle-food') { query = `node["amenity"~"restaurant|cafe|fast_food"](${bbox});`; iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999999" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 2.2 1.8 4 4 4h4c2.2 0 4-1.8 4-4V2"></path><line x1="7" y1="2" x2="7" y2="22"></line><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>`; }
         else if (toggleId === 'toggle-emergency') { query = `node["amenity"~"hospital|clinic|police"](${bbox});`; iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999999" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>`; }
 
-        fetch(`https://overpass-api.de/api/interpreter?data=[out:json];${query}out;`).then(res => res.json()).then(data => {
-            let filteredElements = data.elements;
-            if (currentRouteCoords.length > 0) {
-                filteredElements = data.elements.filter(el => {
-                    if (!el.lat || !el.lon) return false;
-                    for (let i = 0; i < currentRouteCoords.length; i += 10) {
-                        if (map.distance([el.lat, el.lon], [currentRouteCoords[i].lat, currentRouteCoords[i].lng]) < 2000) return true;
-                    } return false;
-                });
-            }
-            filteredElements.sort((a, b) => map.distance([userLat, userLng], [a.lat, a.lon]) - map.distance([userLat, userLng], [b.lat, b.lon])).slice(0, 15).forEach(el => {
-                if (el.lat && el.lon) {
-                    const customIcon = L.divIcon({ className: 'minimal-poi-icon', html: `<div style="background: #1a1a1a; border: 1px solid #333; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 6px rgba(0,0,0,0.6);">${iconSVG}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] });
-                    const distToUser = (map.distance([userLat, userLng], [el.lat, el.lon]) / 1000).toFixed(1);
-                    L.marker([el.lat, el.lon], { icon: customIcon }).addTo(utilityLayers[toggleId]).bindPopup(`<strong style="color: #ffffff;">${el.tags?.name || 'Unknown'}</strong><br><span style="color: #aaaaaa; font-size: 11px;">${distToUser} km from you</span>`);
+        fetch(`https://overpass-api.de/api/interpreter?data=[out:json];${query}out;`)
+            .then(res => res.json())
+            .then(data => {
+                if (label) label.style.opacity = '';
+                if (!data.elements || data.elements.length === 0) return;
+
+                let filteredElements = data.elements;
+                if (currentRouteCoords.length > 0) {
+                    filteredElements = data.elements.filter(el => {
+                        if (!el.lat || !el.lon) return false;
+                        for (let i = 0; i < currentRouteCoords.length; i += 5) {
+                            if (map.distance([el.lat, el.lon], [currentRouteCoords[i].lat, currentRouteCoords[i].lng]) < 5000) return true;
+                        } return false;
+                    });
+                    // If route filter returns nothing, fall back to all results in view
+                    if (filteredElements.length === 0) filteredElements = data.elements;
                 }
+
+                filteredElements
+                    .sort((a, b) => map.distance([userLat, userLng], [a.lat, a.lon]) - map.distance([userLat, userLng], [b.lat, b.lon]))
+                    .slice(0, 20)
+                    .forEach(el => {
+                        if (el.lat && el.lon) {
+                            const customIcon = L.divIcon({ className: 'minimal-poi-icon', html: `<div style="background: #1a1a1a; border: 1px solid #333; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 6px rgba(0,0,0,0.6);">${iconSVG}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] });
+                            const distToUser = (map.distance([userLat, userLng], [el.lat, el.lon]) / 1000).toFixed(1);
+                            L.marker([el.lat, el.lon], { icon: customIcon }).addTo(utilityLayers[toggleId]).bindPopup(`<strong style="color: #ffffff;">${el.tags?.name || 'Unknown'}</strong><br><span style="color: #aaaaaa; font-size: 11px;">${distToUser} km from you</span>`);
+                        }
+                    });
+            })
+            .catch(err => {
+                if (label) label.style.opacity = '';
+                // Uncheck on failure so user can retry
+                e.target.checked = false;
+                console.log('Live Map API Error:', err);
             });
-        }).catch(err => console.log('Live Map API Error:', err));
     });
 });
 
