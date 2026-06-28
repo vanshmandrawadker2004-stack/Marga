@@ -1330,7 +1330,7 @@ document.querySelectorAll('.utility-toggle').forEach(toggle => {
         else if (toggleId === 'toggle-food') { query = `node["amenity"~"restaurant|cafe|fast_food"](${bbox});`; iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999999" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 2.2 1.8 4 4 4h4c2.2 0 4-1.8 4-4V2"></path><line x1="7" y1="2" x2="7" y2="22"></line><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>`; }
         else if (toggleId === 'toggle-emergency') { query = `node["amenity"~"hospital|clinic|police"](${bbox});`; iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999999" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>`; }
 
-        fetch(`/api/overpass?query=${encodeURIComponent(`[out:json];${query}out;`)}`)
+        fetch(`https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(`[out:json];${query}out;`)}`)
             .then(res => res.json())
             .then(data => {
                 if (label) label.style.opacity = '';
