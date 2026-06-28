@@ -1359,8 +1359,6 @@ document.querySelectorAll('.utility-toggle').forEach(toggle => {
             })
             .catch(err => {
                 if (label) label.style.opacity = '';
-                // Uncheck on failure so user can retry
-                e.target.checked = false;
                 console.log('Live Map API Error:', err);
             });
     });
