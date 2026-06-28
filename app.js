@@ -1320,8 +1320,10 @@ document.querySelectorAll('.utility-toggle').forEach(toggle => {
         // Show loading pulse on the icon
         if (label) label.style.opacity = '0.4';
 
-        const bounds = map.getBounds();
-        const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
+        // Cap the query to a ~30km box around the map center so Overpass doesn't reject it
+        const center = map.getCenter();
+        const delta = 0.27; // ~30km in degrees
+        const bbox = `${center.lat - delta},${center.lng - delta},${center.lat + delta},${center.lng + delta}`;
         let query = ''; let iconSVG = '';
 
         if (toggleId === 'toggle-petrol') { query = `node["amenity"="fuel"](${bbox});`; iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999999" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="15" y2="22"></line><line x1="4" y1="9" x2="14" y2="9"></line><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"></path><path d="M14 13h2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"></path></svg>`; }
