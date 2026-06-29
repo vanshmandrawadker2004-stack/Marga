@@ -1,4 +1,5 @@
-// 1. IMPORT FIREBASE 
+// 1. IMPORTS
+import { GEMINI_KEY } from './config.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -47,7 +48,6 @@ let userLng = 73.8567;
 let userMarker = null;
 let currentRiderProfile = null;
 let favoritedLocations = new Set();
-const GEMINI_KEY = 'AIzaSyAyYwgo9Pel7DQFft947InEAaK03qKeDYA';
 
 // Call Gemini REST API directly from the browser
 async function callGeminiSearch(query) {
