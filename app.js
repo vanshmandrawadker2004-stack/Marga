@@ -1,5 +1,4 @@
-// 1. IMPORTS
-import { GEMINI_KEY } from './config.js';
+// 1. IMPORT FIREBASE
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -51,7 +50,8 @@ let favoritedLocations = new Set();
 
 // Call Gemini REST API directly from the browser
 async function callGeminiSearch(query) {
-    const key = GEMINI_KEY;
+    let key = null;
+    try { const cfg = await import('./config.js'); key = cfg.GEMINI_KEY; } catch(e) {}
     if (!key || key.startsWith('YOUR_')) throw new Error('Gemini key not set');
 
     const systemInstruction = `You are the routing engine for Marga, a motorcycle discovery app covering India.
