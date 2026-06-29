@@ -41,12 +41,49 @@ let currentMarkers = [];
 let heatLayer = null;
 let routingControl = null;
 let activeRouteLayers = [];
-let currentRouteCoords = []; 
-let userLat = 18.5204; 
-let userLng = 73.8567; 
-let userMarker = null; 
-let currentRiderProfile = null; 
-let favoritedLocations = new Set(); 
+let currentRouteCoords = [];
+let userLat = 18.5204;
+let userLng = 73.8567;
+let userMarker = null;
+let currentRiderProfile = null;
+let favoritedLocations = new Set();
+const GEMINI_KEY = 'AIzaSyAyYwgo9Pel7DQFft947InEAaK03qKeDYA';
+
+// Call Gemini REST API directly from the browser
+async function callGeminiSearch(query) {
+    const key = GEMINI_KEY;
+    if (!key || key.startsWith('YOUR_')) throw new Error('Gemini key not set');
+
+    const systemInstruction = `You are the routing engine for Marga, a motorcycle discovery app covering India.
+The rider typed a vibe request. Your job is to identify the single best real-world road, trail, or destination in India that matches.
+
+HANDLE ALL QUERY STYLES:
+- Abbreviated time: "2 hr ride", "1.5 hr", "45 min ride" → treat as duration constraint
+- Vague vibes: "want to get lost", "chill Sunday ride", "something different" → pick a mood-matching place
+- Marathi/Hindi mix: "kahi tari chan road pune javal", "thoda duur jaaycha ahe" → understand and match
+- Typos: "chill ryde", "ghat roade", "senic rout" → correct and match
+- Negative: "not mulshi again", "tired of lonavala" → avoid those, suggest alternatives
+- Emotional: "need to clear my head", "want to ride alone" → match to peaceful, less-crowded routes
+- Complex: "2 hr offroad with a chai stop and no highway" → apply all constraints
+
+CRITICAL OUTPUT FORMAT: Respond ONLY with a raw JSON object. No markdown, no backticks, no extra text.
+Schema: {"matchedLocation":"string","latitude":number,"longitude":number,"aiReasoning":"string","recommendedChaiStop":"string","bestTimeToVisit":"string","travelDuration":"string"}`;
+
+    const body = {
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: [{ parts: [{ text: `Rider request: "${query}"` }] }],
+        generationConfig: { temperature: 0.2 }
+    };
+
+    const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    );
+    if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
+    const data = await res.json();
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return JSON.parse(raw.replace(/```json/gi, '').replace(/```/gi, '').trim());
+}
 
 // --- DYNAMIC SMART CARDS FUNCTION ---
 function updateRecommendedCards(trailsData) {
@@ -819,16 +856,59 @@ function executeSearch() {
                 countLabel.classList.add('visible');
             }
         } else {
-            // No matches on a real (non-empty) search: show a brief inline message
-            // in the search bar, then restore what the rider typed.
+            // No Firestore matches — try Gemini AI search for vague/creative queries
             if (query !== '') {
                 const searchBar = document.getElementById('search-bar');
-                if (searchBar) {
-                    const originalText = searchBar.value;
-                    searchBar.style.color = "#555";
-                    searchBar.value = "No trails found";
-                    setTimeout(() => { searchBar.value = originalText; searchBar.style.color = "#fff"; }, 1500);
-                }
+                const originalText = query;
+
+                // Show loading state
+                if (searchBar) { searchBar.style.color = "#888"; searchBar.value = "Asking AI..."; }
+
+                callGeminiSearch(query).then(gem => {
+                    if (searchBar) { searchBar.value = originalText; searchBar.style.color = "#fff"; }
+
+                    // Show AI result as a special pin on the map
+                    const lat = parseFloat(gem.latitude);
+                    const lng = parseFloat(gem.longitude);
+                    if (isNaN(lat) || isNaN(lng)) throw new Error('Bad coordinates from Gemini');
+
+                    map.flyTo([lat, lng], 11, { duration: 1.5 });
+
+                    const aiMarker = L.circleMarker([lat, lng], {
+                        radius: 9, fillColor: '#D9B340', color: '#fff', weight: 1.5,
+                        opacity: 1, fillOpacity: 0.95
+                    }).addTo(map);
+                    currentMarkers.push(aiMarker);
+
+                    const countLabel = document.getElementById('result-count-label');
+                    if (countLabel) { countLabel.innerText = `AI pick: ${gem.matchedLocation}`; countLabel.classList.add('visible'); }
+
+                    // Show location card with AI data
+                    showLocationCard({
+                        locationName: gem.matchedLocation,
+                        latitude: lat,
+                        longitude: lng,
+                        description: `${gem.aiReasoning}\n\n☕ Chai stop: ${gem.recommendedChaiStop || 'N/A'}\n⏱ ${gem.travelDuration || ''} · Best time: ${gem.bestTimeToVisit || 'Any'}`,
+                        vibeType: 'AI Pick',
+                        category: 'AI Suggestion'
+                    });
+                    aiMarker.on('click', () => {
+                        calculateRoute(lat, lng);
+                        showLocationCard({
+                            locationName: gem.matchedLocation, latitude: lat, longitude: lng,
+                            description: `${gem.aiReasoning}\n\n☕ ${gem.recommendedChaiStop || ''}\n⏱ ${gem.travelDuration || ''} · ${gem.bestTimeToVisit || ''}`,
+                            vibeType: 'AI Pick', category: 'AI Suggestion'
+                        });
+                    });
+
+                }).catch(err => {
+                    console.warn('Gemini fallback failed:', err.message);
+                    if (searchBar) {
+                        searchBar.style.color = "#555";
+                        searchBar.value = "No trails found";
+                        setTimeout(() => { searchBar.value = originalText; searchBar.style.color = "#fff"; }, 1500);
+                    }
+                });
             }
         }
     }).catch(err => console.error("Database Error:", err));
